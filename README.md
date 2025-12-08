@@ -1,1 +1,1 @@
-# automated-greenhouse
+# EMBEDDED SYSTEMS BSCpE - 4B "AUTOMATED-GREENHOUSE"
