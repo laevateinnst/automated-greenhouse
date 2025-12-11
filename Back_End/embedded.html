@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Herb Greenhouse</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="embedded.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="embedded.js" defer></script>
+    <script src="public/js/api.js"></script>
+</head>
+<body>
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-container">
+            <div class="login-header">
+                <h2><i class="fas fa-seedling"></i> Automated Herb Greenhouse</h2>
+                <p>Please login to access your greenhouse controls</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="input-group">
+                    <label for="username"><i class="fas fa-user"></i> Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div class="login-info">
+                    <p>Demo login: <strong>user</strong> / <strong>pass</strong></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container" id="main-container" style="display: none;">
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-seedling"></i> Automated Herb Greenhouse</h1>
+                <p class="subtitle" id="plant-name-display">Custom Settings</p>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="logged-user">User</span>
+                    <button id="logout-btn" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+                <div class="theme-toggle">
+                    <span class="theme-label">Night Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="current-time" id="current-time">00:00:00</div>
+            </div>
+        </header>
+                <div class="time-effects-toggle-container">
+            <button id="toggle-time-effects" class="time-effects-toggle-btn">
+                <i class="fas fa-eye"></i>
+                <span>Show Time Effects</span>
+            </button>
+        </div>
+
+        <div id="time-effects-overlay" class="time-effects-overlay"></div>
+
+        <!-- Atmospheric Effects -->
+        <div class="atmospheric-effects">
+            <div class="star-field" id="star-field"></div>
+            <div class="clouds-container" id="clouds-container"></div>
+            <div class="sunbeams" id="sunbeams"></div>
+        </div>
+
+        <!-- Sun/Moon Tracker -->
+        <div id="sun-moon-tracker" class="sun-moon-tracker">
+            <div class="celestial-track">
+                <div class="horizon-line"></div>
+                <div class="sun" id="sun-element">
+                    <div class="sun-core"></div>
+                    <div class="sun-rays"></div>
+                </div>
+                <div class="moon" id="moon-element">
+                    <div class="moon-surface"></div>
+                    <div class="moon-craters">
+                        <div class="crater crater-1"></div>
+                        <div class="crater crater-2"></div>
+                        <div class="crater crater-3"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="time-markers">
+                <div class="time-marker" data-time="6">6 AM</div>
+                <div class="time-marker" data-time="12">Noon</div>
+                <div class="time-marker" data-time="18">6 PM</div>
+                <div class="time-marker" data-time="0">Midnight</div>
+            </div>
+        </div>
+
+        <!-- Plant State Indicator -->
+        <div class="plant-states-container">
+            <div class="plant-state-indicator" id="plant-state-indicator">
+                <div class="plant-state-icon">
+                    <i class="fas fa-seedling"></i>
+                    <div class="plant-state-glow"></div>
+                </div>
+                <div class="plant-state-info">
+                    <span class="plant-state-text" id="plant-state-text">Photosynthesis Active</span>
+                    <span class="plant-state-desc" id="plant-state-desc">Plants are producing energy</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time of Day Display -->
+        <div class="time-of-day-display" id="time-of-day-display">
+            <div class="time-period-header">
+                <i class="fas fa-clock"></i>
+                <h3>Greenhouse Cycle</h3>
+            </div>
+            <div class="time-period-info">
+                <div class="period-icon" id="period-icon">
+                    <i class="fas fa-sun"></i>
+                </div>
+                <div class="period-details">
+                    <span class="period-name" id="period-name">Daytime</span>
+                    <span class="period-time" id="period-time">6:00 AM - 7:45 PM</span>
+                </div>
+            </div>
+            <div class="time-progress-container">
+                <div class="time-progress-bar">
+                    <div class="time-progress-fill" id="time-progress-fill"></div>
+                </div>
+                <div class="time-labels">
+                    <span class="time-label sunrise">Sunrise<br><strong id="sunrise-time">6:30 AM</strong></span>
+                    <span class="time-label sunset">Sunset<br><strong id="sunset-time">7:45 PM</strong></span>
+                </div>
+            </div>
+            <div class="daylight-info">
+                <div class="daylight-stat">
+                    <i class="fas fa-sun"></i>
+                    <span>Daylight: <strong id="daylight-hours">13h 15m</strong></span>
+                </div>
+                <div class="daylight-stat">
+                    <i class="fas fa-moon"></i>
+                    <span>Night: <strong id="night-hours">10h 45m</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Simulation Controls -->
+        <div class="time-controls" id="time-controls">
+            <button class="time-control-btn" id="real-time-btn">
+                <i class="fas fa-sync-alt"></i> Real Time
+            </button>
+            <button class="time-control-btn" id="speed-up-btn">
+                <i class="fas fa-forward"></i> Speed 10x
+            </button>
+            <button class="time-control-btn" id="pause-time-btn">
+                <i class="fas fa-pause"></i> Pause
+            </button>
+            <div class="time-slider-container">
+                <input type="range" id="time-simulation-slider" min="0" max="24" step="0.1" value="12" class="time-slider">
+                <div class="time-slider-labels">
+                    <span>12 AM</span>
+                    <span>6 AM</span>
+                    <span>12 PM</span>
+                    <span>6 PM</span>
+                    <span>12 AM</span>
+                </div>
+            </div>
+        </div>
+
+        <section class="control-section">
+            <h2 class="section-title">Plant Settings & Targets Options</h2>
+            <div class="control-container">
+                <!-- Plant Selection -->
+                <div class="plant-selection">
+                    <h3><i class="fas fa-leaf"></i> Select Plant Type</h3>
+                    <div class="plant-options">
+                        <div class="plant-option" data-plant="oregano">
+                            <i class="fas fa-seedling"></i> 
+                            <span>Oregano</span>
+                        </div>
+                        <div class="plant-option" data-plant="cilantro">
+                            <i class="fas fa-leaf"></i>
+                            <span>Cilantro</span>
+                        </div>
+                        <div class="plant-option" data-plant="tomato">
+                            <i class="fas fa-apple-alt"></i>
+                            <span>Tomato</span>
+                        </div>
+                        <div class="plant-option" data-plant="chilipepper">
+                            <i class="fas fa-pepper-hot"></i>
+                            <span>Chili Pepper</span>
+                        </div>
+                        <div class="plant-option active" data-plant="custom">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Custom</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Target Settings -->
+                <div class="target-settings">
+                    <h3><i class="fas fa-bullseye"></i> Target Conditions</h3>
+                    <div class="target-grid">
+                        <!-- Temperature Target -->
+                        <div class="target-card">
+                            <div class="target-header">
+                                <i class="fas fa-thermometer-half"></i>
+                                <h4>Temperature</h4>
+                                <span class="target-value-display" id="temp-target-value">24°C</span>
+                            </div>
+                            <div class="target-control">
+                                <input type="range" id="temp-target" min="15" max="35" step="0.5" value="24" class="target-slider">
+                                <div class="target-range">
+                                    <span>15°C</span>
+                                    <span>35°C</span>
+                                </div>
+                            </div>
+                            <div class="target-status">
+                                <span>Current: <strong id="current-temp">24.5°C</strong></span>
+                                <span class="status-indicator optimal"></span>
+                            </div>
+                        </div>
+
+                        <!-- Humidity Target -->
+                        <div class="target-card">
+                            <div class="target-header">
+                                <i class="fas fa-tint"></i>
+                                <h4>Humidity</h4>
+                                <span class="target-value-display" id="humidity-target-value">65%</span>
+                            </div>
+                            <div class="target-control">
+                                <input type="range" id="humidity-target" min="30" max="90" step="1" value="65" class="target-slider">
+                                <div class="target-range">
+                                    <span>30%</span>
+                                    <span>90%</span>
+                                </div>
+                            </div>
+                            <div class="target-status">
+                                <span>Current: <strong id="current-humidity">65%</strong></span>
+                                <span class="status-indicator optimal"></span>
+                            </div>
+                        </div>
+
+                        <div class="target-card">
+                            <div class="target-header">
+                                <i class="fas fa-sun"></i>
+                                <h4>Light Level</h4>
+                                <span class="target-value-display" id="light-target-value">850 lux</span>
+                            </div>
+                            <div class="target-control">
+                                <input type="range" id="light-target" min="200" max="1500" step="10" value="850" class="target-slider">
+                                <div class="target-range">
+                                    <span>200 lux</span>
+                                    <span>1500 lux</span>
+                                </div>
+                            </div>
+                            <div class="target-status">
+                                <span>Current: <strong id="current-light">850 lux</strong></span>
+                                <span class="status-indicator optimal"></span>
+                            </div>
+                        </div>
+
+                        <div class="target-card">
+                            <div class="target-header">
+                                <i class="fas fa-seedling"></i>
+                                <h4>Soil Moisture</h4>
+                                <span class="target-value-display" id="soil-target-value">70%</span>
+                            </div>
+                            <div class="target-control">
+                                <input type="range" id="soil-target" min="30" max="90" step="1" value="70" class="target-slider">
+                                <div class="target-range">
+                                    <span>30%</span>
+                                    <span>90%</span>
+                                </div>
+                            </div>
+                            <div class="target-status">
+                                <span>Current: <strong id="current-soil">72%</strong></span>
+                                <span class="status-indicator warning"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="preset-controls">
+                        <button id="save-preset" class="control-btn">
+                            <i class="fas fa-save"></i> Save as Preset
+                        </button>
+                        <button id="apply-targets" class="control-btn primary">
+                            <i class="fas fa-play-circle"></i> Apply Targets
+                        </button>
+                        <button id="reset-targets" class="control-btn secondary">
+                            <i class="fas fa-undo"></i> Reset to Default
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <main class="main-content">
+            <section class="stats-section">
+                <h2 class="section-title">Current Greenhouse Conditions</h2>
+                <div class="stats-grid">
+                    <div class="stat-card temperature">
+                        <div class="stat-icon">
+                            <i class="fas fa-thermometer-half"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-title">Temperature</h3>
+                            <p class="stat-value" id="temperature-value">24.5°C</p>
+                            <div class="stat-status">
+                                <span class="status-indicator optimal"></span>
+                                <span class="status-text">Optimal</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card humidity">
+                        <div class="stat-icon">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-title">Air Humidity</h3>
+                            <p class="stat-value" id="humidity-value">65%</p>
+                            <div class="stat-status">
+                                <span class="status-indicator optimal"></span>
+                                <span class="status-text">Optimal</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card soil">
+                        <div class="stat-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-title">Soil Moisture</h3>
+                            <p class="stat-value" id="soil-value">72%</p>
+                            <div class="stat-status">
+                                <span class="status-indicator warning"></span>
+                                <span class="status-text">Needs Water</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card light">
+                        <div class="stat-icon">
+                            <i class="fas fa-sun"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 class="stat-title">Light Level</h3>
+                            <p class="stat-value" id="light-value">850 lux</p>
+                            <div class="stat-status">
+                                <span class="status-indicator optimal"></span>
+                                <span class="status-text">Good</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+          <!-- ========== WATER PUMP SECTION ========== -->
+            <section class="waterpump-section">
+                <div class="section-title">
+                    <i class="fas fa-tint"></i> Water Pump & Irrigation System
+                    <div class="section-controls">
+                    </div>
+                </div>
+                
+                <div class="waterpump-grid">
+                    <!-- Pump Status Card -->
+                    <div class="pump-status-card">
+                        <div class="pump-status-header">
+                            <div class="pump-icon">
+                                <i class="fas fa-tint"></i>
+                            </div>
+                            <div class="pump-status-info">
+                                <h3>Irrigation System</h3>
+                                <div class="pump-state">
+                                    <span class="pump-status-label" id="waterpump-status">READY</span>
+                                    <span class="status-indicator optimal" id="waterpump-state-indicator"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pump-controls">
+                            <button class="pump-btn primary" id="toggle-waterpump">
+                                <i class="fas fa-play"></i> Start Irrigation
+                            </button>
+                            <button class="pump-btn secondary" id="manual-mode-btn">
+                                <i class="fas fa-hand-paper"></i> Manual Mode
+                            </button>
+                        </div>
+                        <div class="pump-details">
+                            <div class="pump-detail-item">
+                                <i class="fas fa-water"></i>
+                                <span>Water Level: <strong id="water-level">85%</strong></span>
+                            </div>
+                            <div class="pump-detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Last: <strong id="last-irrigation">2h ago</strong></span>
+                            </div>
+                            <div class="pump-detail-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span id="waterpump-detail">Auto mode active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Soil & Settings Card -->
+                    <div class="soil-settings-card">
+                        <!-- Soil Monitoring Section -->
+                        <div class="soil-monitoring">
+                            <div class="soil-header">
+                                <h3><i class="fas fa-seedling"></i> Soil Moisture</h3>
+                                <div class="soil-current">
+                                    <span>Current: </span>
+                                    <strong id="current-soil-pump">72%</strong>
+                                </div>
+                            </div>
+                            <div class="soil-moisture-display">
+                                <div class="soil-bar">
+                                    <div class="soil-fill" id="soil-fill"></div>
+                                    <div class="soil-labels">
+                                        <span class="soil-label dry">Dry</span>
+                                        <span class="soil-label optimal">Optimal</span>
+                                        <span class="soil-label wet">Wet</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pump Settings Section -->
+                        <div class="pump-settings">
+                            <h3><i class="fas fa-cog"></i> Settings</h3>
+                            <div class="settings-grid">
+                                <div class="setting-item">
+                                    <span class="setting-label">Duration</span>
+                                    <span class="setting-value" id="pump-duration">15 min</span>
+                                </div>
+                                <div class="setting-item">
+                                    <span class="setting-label">Flow Rate</span>
+                                    <span class="setting-value" id="pump-flow-rate">5 L/min</span>
+                                </div>
+                                <div class="setting-item">
+                                    <span class="setting-label">Water Temp</span>
+                                    <span class="setting-value" id="water-temp">22°C</span>
+                                </div>
+                                <div class="setting-item">
+                                    <span class="setting-label">Auto Mode</span>
+                                    <span class="setting-value auto-status" id="auto-status">Enabled</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Auto Irrigation Threshold -->
+                            <div class="auto-threshold-control">
+                                <div class="threshold-header">
+                                    <i class="fas fa-seedling"></i>
+                                    <span>Auto-irrigation threshold</span>
+                                </div>
+                                <div class="threshold-slider-container">
+                                    <input type="range" id="auto-threshold" min="30" max="70" value="40" class="threshold-slider">
+                                    <span class="threshold-value" id="threshold-value">40%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="cover-section">
+                <div class="section-title">
+                    <i class="fas fa-cloud-sun"></i> Greenhouse Cover Shade Status
+                    <div class="section-controls">
+                    </div>
+                </div>
+                <div class="cover-container">
+                    <div class="cover-status-card" id="cover-status">
+                        <div class="cover-icon">
+                            <i class="fas fa-cloud-sun"></i>
+                        </div>
+                        <div class="cover-info">
+                            <h3>Greenhouse Shade Cover</h3>
+                            <p class="cover-state">Open</p>
+                            <p class="cover-detail">Allows natural sunlight and ventilation</p>
+                        </div>
+                        <button class="cover-toggle-btn" id="toggle-cover">
+                            <i class="fas fa-exchange-alt"></i> Toggle Cover
+                        </button>
+                    </div>
+                    
+                    <div class="cover-benefits">
+                        <div class="benefit">
+                            <i class="fas fa-temperature-high"></i>
+                            <span>Temperature Control</span>
+                        </div>
+                        <div class="benefit">
+                            <i class="fas fa-wind"></i>
+                            <span>Ventilation</span>
+                        </div>
+                        <div class="benefit">
+                            <i class="fas fa-cloud-rain"></i>
+                            <span>Rain Protection</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="charts-section">
+                <div class="chart-container">
+                    <h2 class="section-title">Environmental Trends Graph</h2>
+                    <div class="chart-buttons">
+                        <button class="chart-btn active" data-chart="temperature">Temperature</button>
+                        <button class="chart-btn" data-chart="humidity">Humidity</button>
+                        <button class="chart-btn" data-chart="soil">Soil Moisture</button>
+                        <button class="chart-btn" data-chart="light">Light Level</button>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="environment-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="plant-health-section">
+                <h2 class="section-title">Plant Health Status</h2>
+                <div class="plant-grid">
+                    <div class="plant-card healthy">
+                        <div class="plant-icon">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <div class="plant-info">
+                            <h3>Oregano</h3>
+                            <p>Growth Stage: Fruiting</p>
+                            <div class="plant-status">
+                                <span class="status-dot healthy"></span>
+                                <span>Healthy</span>
+                            </div>
+                        </div>
+                        <div class="plant-stats">
+                            <div class="plant-stat">
+                                <small>Temp</small>
+                                <span>24°C</span>
+                            </div>
+                            <div class="plant-stat">
+                                <small>Humidity</small>
+                                <span>68%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="plant-card warning">
+                        <div class="plant-icon">
+                            <i class="fas fa-leaf"></i>
+                        </div>
+                        <div class="plant-info">
+                            <h3>Cilantro</h3>
+                            <p>Growth Stage: Flowering</p>
+                            <div class="plant-status">
+                                <span class="status-dot warning"></span>
+                                <span>Low Moisture</span>
+                            </div>
+                        </div>
+                        <div class="plant-stats">
+                            <div class="plant-stat">
+                                <small>Temp</small>
+                                <span>26°C</span>
+                            </div>
+                            <div class="plant-stat">
+                                <small>Humidity</small>
+                                <span>45%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="plant-card healthy">
+                        <div class="plant-icon">
+                            <i class="fas fa-apple-alt"></i>
+                        </div>
+                        <div class="plant-info">
+                            <h3>Tomato</h3>
+                            <p>Growth Stage: Root Development</p>
+                            <div class="plant-status">
+                                <span class="status-dot healthy"></span>
+                                <span>Healthy</span>
+                            </div>
+                        </div>
+                        <div class="plant-stats">
+                            <div class="plant-stat">
+                                <small>Temp</small>
+                                <span>22°C</span>
+                            </div>
+                            <div class="plant-stat">
+                                <small>Humidity</small>
+                                <span>75%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="plant-card optimal">
+                        <div class="plant-icon">
+                            <i class="fas fa-pepper-hot"></i>
+                        </div>
+                        <div class="plant-info">
+                            <h3>Chilli Pepper</h3>
+                            <p>Growth Stage: Harvest Ready</p>
+                            <div class="plant-status">
+                                <span class="status-dot optimal"></span>
+                                <span>Optimal</span>
+                            </div>
+                        </div>
+                        <div class="plant-stats">
+                            <div class="plant-stat">
+                                <small>Temp</small>
+                                <span>20°C</span>
+                            </div>
+                            <div class="plant-stat">
+                                <small>Humidity</small>
+                                <span>80%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="logs-section">
+                <h2 class="section-title">System Logs & Alerts</h2>
+                <div class="logs-container">
+                    <div class="log-mode-selector">
+                        <button class="log-mode-btn active" data-mode="all">All Logs</button>
+                        <button class="log-mode-btn" data-mode="alerts">Alerts</button>
+                        <button class="log-mode-btn" data-mode="irrigation">Irrigation</button>
+                        <button class="log-mode-btn" data-mode="climate">Climate</button>
+                        <button class="log-mode-btn" data-mode="system">System</button>
+                    </div>
+                    
+                    <div class="logs-list">
+                        <div class="log-entry alert">
+                            <div class="log-time">14:32:15</div>
+                            <div class="log-message">Soil moisture dropped below 30% in Section B</div>
+                            <div class="log-type">ALERT</div>
+                        </div>
+                        <div class="log-entry irrigation">
+                            <div class="log-time">14:30:45</div>
+                            <div class="log-message">Automatic irrigation started for Tomato plants</div>
+                            <div class="log-type">IRRIGATION</div>
+                        </div>
+                        <div class="log-entry climate">
+                            <div class="log-time">14:28:10</div>
+                            <div class="log-message">Greenhouse cover opened for ventilation</div>
+                            <div class="log-type">CLIMATE</div>
+                        </div>
+                        <div class="log-entry system">
+                            <div class="log-time">14:25:33</div>
+                            <div class="log-message">Sensor #TEMP-004 recalibrated successfully</div>
+                            <div class="log-type">SYSTEM</div>
+                        </div>
+                        <div class="log-entry climate">
+                            <div class="log-time">14:20:15</div>
+                            <div class="log-message">Light levels optimal at 850 lux</div>
+                            <div class="log-type">CLIMATE</div>
+                        </div>
+                        <!-- Another Alert log -->
+                        <div class="log-entry alert">
+                            <div class="log-time">14:15:42</div>
+                            <div class="log-message">Temperature approaching upper limit (28°C)</div>
+                            <div class="log-type">ALERT</div>
+                        </div>
+                        <div class="log-entry system">
+                            <div class="log-time">14:10:05</div>
+                            <div class="log-message">Backup power system test completed</div>
+                            <div class="log-type">SYSTEM</div>
+                        </div>
+                        <div class="log-entry irrigation">
+                            <div class="log-time">14:05:22</div>
+                            <div class="log-message">Water reservoir at 85% capacity</div>
+                            <div class="log-type">IRRIGATION</div>
+                        </div>
+                    </div>
+                    
+                    <div class="log-controls">
+                        <button class="log-control-btn" id="refresh-logs">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="log-control-btn" id="add-log">
+                            <i class="fas fa-plus-circle"></i> Add Note
+                        </button>
+                        <button class="log-control-btn" id="export-logs">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>Automated Herb Greenhouse; 2025</p>
+                <div class="system-status">
+                    <span class="status-indicator active"></span>
+                    <span class="status-text">System: <strong>Operational</strong> | Plant: <strong id="current-plant-type">Custom</strong></span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <div id="toast-container"></div>
+</body>
+</html>
