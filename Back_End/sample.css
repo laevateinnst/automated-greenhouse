@@ -818,64 +818,17 @@ textarea.form-input {
 }
 
 /* =================== LOG SYSTEM =================== */
-.logs-section {
-    margin-top: 2rem;
-}
-
-.logs-container {
-    background-color: var(--bg-card);
+/* =================== LOG SYSTEM =================== */
+.log-container {
+    height: 300px;
+    overflow-y: auto;
     border-radius: var(--radius);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-}
-
-.log-mode-selector {
-    display: flex;
-    background-color: var(--bg-tertiary);
-    padding: 0.5rem;
-    border-bottom: 1px solid var(--border-color);
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.log-mode-btn {
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-sm);
-    background-color: transparent;
-    border: 1px solid transparent;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.log-mode-btn:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-.log-mode-btn.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
+    margin-top: 1rem;
 }
 
 .logs-list {
-    height: 300px;
-    overflow-y: auto;
-    padding: 0;
-    position: relative;
-}
-
-.log-category {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
     padding: 0.75rem;
 }
 
@@ -884,33 +837,17 @@ textarea.form-input {
     grid-template-columns: auto 1fr auto;
     gap: 1rem;
     padding: 0.75rem;
-    margin-bottom: 0.5rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.875rem;
-    transition: all var(--transition-fast);
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    transition: background-color var(--transition-fast);
 }
 
 .log-item:hover {
     background-color: var(--bg-tertiary);
-    transform: translateX(2px);
 }
 
 .log-item:last-child {
-    margin-bottom: 0;
+    border-bottom: none;
 }
 
 .log-time {
@@ -918,13 +855,11 @@ textarea.form-input {
     font-family: 'Roboto Mono', monospace;
     font-size: 0.75rem;
     min-width: 80px;
-    align-self: center;
 }
 
 .log-message {
     color: var(--text-primary);
     word-break: break-word;
-    align-self: center;
 }
 
 .log-type {
@@ -936,7 +871,6 @@ textarea.form-input {
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    align-self: center;
 }
 
 /* Log type styling */
@@ -945,19 +879,9 @@ textarea.form-input {
     background-color: rgba(245, 158, 11, 0.1) !important;
 }
 
-.log-alert .log-type {
-    background-color: rgba(245, 158, 11, 0.2) !important;
-    color: #f59e0b !important;
-}
-
 .log-error {
     border-left: 4px solid #ef4444 !important;
     background-color: rgba(239, 68, 68, 0.1) !important;
-}
-
-.log-error .log-type {
-    background-color: rgba(239, 68, 68, 0.2) !important;
-    color: #ef4444 !important;
 }
 
 .log-warning {
@@ -965,19 +889,9 @@ textarea.form-input {
     background-color: rgba(245, 158, 11, 0.1) !important;
 }
 
-.log-warning .log-type {
-    background-color: rgba(245, 158, 11, 0.2) !important;
-    color: #f59e0b !important;
-}
-
 .log-irrigation {
     border-left: 4px solid #3b82f6 !important;
     background-color: rgba(59, 130, 246, 0.1) !important;
-}
-
-.log-irrigation .log-type {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-    color: #3b82f6 !important;
 }
 
 .log-cover {
@@ -985,19 +899,9 @@ textarea.form-input {
     background-color: rgba(16, 185, 129, 0.1) !important;
 }
 
-.log-cover .log-type {
-    background-color: rgba(16, 185, 129, 0.2) !important;
-    color: #10b981 !important;
-}
-
 .log-sleep {
     border-left: 4px solid #8b5cf6 !important;
     background-color: rgba(139, 92, 246, 0.1) !important;
-}
-
-.log-sleep .log-type {
-    background-color: rgba(139, 92, 246, 0.2) !important;
-    color: #8b5cf6 !important;
 }
 
 .log-system {
@@ -1005,19 +909,9 @@ textarea.form-input {
     background-color: rgba(107, 114, 128, 0.1) !important;
 }
 
-.log-system .log-type {
-    background-color: rgba(107, 114, 128, 0.2) !important;
-    color: #6b7280 !important;
-}
-
 .log-climate {
     border-left: 4px solid #ef4444 !important;
     background-color: rgba(239, 68, 68, 0.1) !important;
-}
-
-.log-climate .log-type {
-    background-color: rgba(239, 68, 68, 0.2) !important;
-    color: #ef4444 !important;
 }
 
 .log-note {
@@ -1025,134 +919,63 @@ textarea.form-input {
     background-color: rgba(245, 158, 11, 0.1) !important;
 }
 
-.log-note .log-type {
-    background-color: rgba(245, 158, 11, 0.2) !important;
-    color: #f59e0b !important;
-}
-
-.log-info {
-    border-left: 4px solid #3b82f6 !important;
-    background-color: rgba(59, 130, 246, 0.1) !important;
-}
-
-.log-info .log-type {
-    background-color: rgba(59, 130, 246, 0.2) !important;
-    color: #3b82f6 !important;
-}
-
-.log-success {
-    border-left: 4px solid #10b981 !important;
-    background-color: rgba(16, 185, 129, 0.1) !important;
-}
-
-.log-success .log-type {
-    background-color: rgba(16, 185, 129, 0.2) !important;
-    color: #10b981 !important;
-}
-
 /* Dark mode log colors */
 [data-theme="dark"] .log-alert {
-    background-color: rgba(245, 158, 11, 0.15) !important;
+    background-color: rgba(245, 158, 11, 0.2) !important;
 }
 
 [data-theme="dark"] .log-error {
-    background-color: rgba(239, 68, 68, 0.15) !important;
+    background-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 [data-theme="dark"] .log-warning {
-    background-color: rgba(245, 158, 11, 0.15) !important;
+    background-color: rgba(245, 158, 11, 0.2) !important;
 }
 
 [data-theme="dark"] .log-irrigation {
-    background-color: rgba(59, 130, 246, 0.15) !important;
+    background-color: rgba(59, 130, 246, 0.2) !important;
 }
 
 [data-theme="dark"] .log-cover {
-    background-color: rgba(16, 185, 129, 0.15) !important;
+    background-color: rgba(16, 185, 129, 0.2) !important;
 }
 
 [data-theme="dark"] .log-sleep {
-    background-color: rgba(139, 92, 246, 0.15) !important;
+    background-color: rgba(139, 92, 246, 0.2) !important;
 }
 
 [data-theme="dark"] .log-system {
-    background-color: rgba(107, 114, 128, 0.15) !important;
+    background-color: rgba(107, 114, 128, 0.2) !important;
 }
 
 [data-theme="dark"] .log-climate {
-    background-color: rgba(239, 68, 68, 0.15) !important;
+    background-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 [data-theme="dark"] .log-note {
-    background-color: rgba(245, 158, 11, 0.15) !important;
-}
-
-[data-theme="dark"] .log-info {
-    background-color: rgba(59, 130, 246, 0.15) !important;
-}
-
-[data-theme="dark"] .log-success {
-    background-color: rgba(16, 185, 129, 0.15) !important;
+    background-color: rgba(245, 158, 11, 0.2) !important;
 }
 
 .log-controls {
     display: flex;
     gap: 0.5rem;
-    padding: 1rem;
-    background-color: var(--bg-tertiary);
-    border-top: 1px solid var(--border-color);
+    margin-top: 1rem;
 }
 
-.log-control-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.log-mode-buttons {
+    display: flex;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-fast);
 }
 
-.log-control-btn:hover {
-    background-color: var(--bg-hover);
-    border-color: var(--border-dark);
+/* =================== CONTROL PANELS =================== */
+.control-panel {
+    margin-top: 1.5rem;
 }
 
-.log-control-btn i {
-    font-size: 0.875rem;
-}
-
-/* Log category scrollbar styling */
-.logs-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.logs-list::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-}
-
-.logs-list::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
-    border-radius: 4px;
-}
-
-.logs-list::-webkit-scrollbar-thumb:hover {
-    background: var(--text-tertiary);
-}
-
-/* Empty state message */
-.no-logs-message {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--text-muted);
-    font-size: 0.875rem;
+.control-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
 }
 
 /* =================== TOAST NOTIFICATION SYSTEM =================== */
@@ -1449,34 +1272,6 @@ textarea.form-input {
         padding: 1rem;
     }
     
-    .log-mode-selector {
-        overflow-x: auto;
-        padding-bottom: 0.5rem;
-    }
-    
-    .log-mode-btn {
-        white-space: nowrap;
-    }
-    
-    .log-item {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-    }
-    
-    .log-time {
-        min-width: auto;
-        font-size: 0.7rem;
-    }
-    
-    .log-controls {
-        flex-wrap: wrap;
-    }
-    
-    .log-control-btn {
-        flex: 1;
-        min-width: 120px;
-    }
-    
     .control-buttons {
         flex-wrap: wrap;
     }
@@ -1509,13 +1304,9 @@ textarea.form-input {
         grid-template-columns: repeat(2, 1fr);
     }
     
-    .log-mode-btn {
-        padding: 0.5rem;
-        font-size: 0.75rem;
-    }
-    
-    .logs-list {
-        height: 250px;
+    .log-item {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
     }
 }
 

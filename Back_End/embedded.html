@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Automated Herb Greenhouse</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="embedded.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="embedded.js" defer></script>
@@ -60,6 +62,15 @@
             </div>
         </header>
         
+        <!-- SLEEP MODE CONTROL SECTION -->
+        <div class="sleep-toggle-simple">
+                <span class="toggle-label">Sleep Mode</span>
+                <label class="switch">
+                    <input type="checkbox" id="sleep-toggle-simple">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
         <div class="time-effects-toggle-container">
             <button id="toggle-time-effects" class="time-effects-toggle-btn">
                 <i class="fas fa-eye"></i>
@@ -395,10 +406,6 @@
                         </div>
                         <div class="pump-details">
                             <div class="pump-detail-item">
-                                <i class="fas fa-water"></i>
-                                <span>Water Level: <strong id="water-level">85%</strong></span>
-                            </div>
-                            <div class="pump-detail-item">
                                 <i class="fas fa-clock"></i>
                                 <span>Last: <strong id="last-irrigation">2h ago</strong></span>
                             </div>
@@ -638,9 +645,15 @@
                         <button class="log-mode-btn" data-mode="system">System</button>
                     </div>
                     
-                    <div class="logs-list" id="logs-list">
-                        <!-- Logs will be added here dynamically -->
+                    <div class="logs-list">
+
+                        <div class="log-category" id="logs-all"></div>
+                        <div class="log-category" id="logs-alerts" style="display:none;"></div>
+                        <div class="log-category" id="logs-irrigation" style="display:none;"></div>
+                        <div class="log-category" id="logs-climate" style="display:none;"></div>
+                        <div class="log-category" id="logs-system" style="display:none;"></div>
                     </div>
+
                     
                     <div class="log-controls">
                         <button class="log-control-btn" id="refresh-logs">
@@ -667,6 +680,7 @@
             </div>
         </footer>
     </div>
+    <div class="toast-container" id="toast-container"></div>
 
     <script src="embedded.js"></script>
 </body>
