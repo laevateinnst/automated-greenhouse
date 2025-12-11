@@ -1,4 +1,4 @@
-// server.js - single-file backend (CommonJS) for Greenhouse Dashboard - ENHANCED VERSION
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -6,10 +6,10 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5005;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ---------- Middleware ----------
+
 app.use(cors({
   origin: ['http://127.0.0.1:5500', 'http://localhost:5500', 'http://localhost:3000', `http://localhost:${PORT}`],
   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
@@ -20,13 +20,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---------- Mongoose connection with fallback flag ----------
+
 let mongoConnected = false;
 
 if (!MONGODB_URI) {
   console.warn('⚠️ MONGODB_URI missing in .env — running in fallback mode');
 } else {
-  // Add connection timeout options
+
   mongoose.connect(MONGODB_URI, {
     serverSelectionTimeoutMS: 10000, // 10 seconds timeout
     socketTimeoutMS: 45000,
@@ -36,7 +36,7 @@ if (!MONGODB_URI) {
     console.log('📡 Database:', mongoose.connection.name);
     console.log('📍 Host:', mongoose.connection.host);
     mongoConnected = true;
-    // Delay sync to ensure connection is stable
+
     setTimeout(syncFallbackUsersToMongo, 1000);
   })
   .catch(err => {
@@ -45,7 +45,7 @@ if (!MONGODB_URI) {
   });
 }
 
-// ---------- Schemas & Models ----------
+
 const greenhouseDataSchema = new mongoose.Schema({
   temperature: Number,
   humidity: Number,
@@ -85,7 +85,7 @@ const logSchema = new mongoose.Schema({
 });
 const Log = mongoose.model('Log', logSchema);
 
-// ---------- In-memory fallback ----------
+
 let memoryData = { temperature: 24.5, humidity: 65, soilMoisture: 72, lightLevel: 850, recordedAt: new Date() };
 let fallbackUsers = [
   { name: 'Admin', username: 'admin', password: 'admin123' },
@@ -95,7 +95,7 @@ let fallbackDevices = { pumpStatus: 'OFF', coverStatus: 'CLOSED', updatedAt: new
 let fallbackTargets = { temperature: 22, humidity: 60, soil: 65, light: 800, plantType: 'Tomato' };
 let fallbackLogs = [];
 
-// ---------- Auto-sync fallback users to MongoDB ----------
+
 async function syncFallbackUsersToMongo() {
   if (!mongoConnected) {
     console.log('⚠️ MongoDB not connected, skipping user sync');
@@ -125,9 +125,9 @@ async function syncFallbackUsersToMongo() {
   console.log(`📊 User sync complete: ${syncedCount} users added to MongoDB`);
 }
 
-// ---------- Helper: Unified user lookup ----------
+
 async function findUserAnywhere(username) {
-  // 1. Try MongoDB first (if connected)
+
   if (mongoConnected) {
     try {
       const user = await User.findOne({ username }).lean();
@@ -137,14 +137,14 @@ async function findUserAnywhere(username) {
     }
   }
   
-  // 2. Fallback to in-memory users
+
   const fbUser = fallbackUsers.find(u => u.username === username);
   if (fbUser) return { user: fbUser, source: 'fallback' };
   
   return null;
 }
 
-// ---------- Simple token auth ----------
+
 const tokens = new Map(); // token -> username
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
@@ -174,16 +174,16 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// ---------- Helpers ----------
+
 function safeNumber(v, fallback=0) {
   if (typeof v === 'number' && !Number.isNaN(v)) return v;
   const n = Number(v);
   return Number.isNaN(n) ? fallback : n;
 }
 
-// ---------- Routes ----------
 
-// Health
+
+
 app.get('/api/health', async (req, res) => {
   let dbStatus = mongoConnected ? 'connected' : 'disconnected';
   let count = 0;
@@ -198,7 +198,7 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// Plant presets (public)
+
 app.get('/api/plant-presets', (req, res) => {
   const presets = [
     { name: 'Tomato', temperature: 24, humidity: 60, soil: 70, light: 1200 },
@@ -208,7 +208,7 @@ app.get('/api/plant-presets', (req, res) => {
   res.json({ success: true, data: presets });
 });
 
-// Admin creation (works with or without MongoDB)
+
 app.post('/api/admin/create', async (req, res) => {
   try {
     const adminSecret = process.env.ADMIN_SECRET || 'default-secret-change-me';
@@ -222,13 +222,13 @@ app.post('/api/admin/create', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing fields' });
     }
     
-    // Check if user exists anywhere
+
     const existing = await findUserAnywhere(username);
     if (existing) {
       return res.status(400).json({ success: false, error: 'User already exists' });
     }
     
-    // Try MongoDB first
+
     if (mongoConnected) {
       try {
         const user = await User.create({ name, username, password });
@@ -243,7 +243,7 @@ app.post('/api/admin/create', async (req, res) => {
       }
     }
     
-    // Fallback to in-memory
+
     fallbackUsers.push({ name, username, password });
     res.json({ 
       success: true, 
@@ -258,27 +258,27 @@ app.post('/api/admin/create', async (req, res) => {
   }
 });
 
-// Login (unified - checks both MongoDB and fallback)
+
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ success: false, error: 'Missing credentials' });
   }
   
-  // Try to find user anywhere
+
   const userResult = await findUserAnywhere(username);
   
   if (!userResult || userResult.user.password !== password) {
     return res.status(401).json({ success: false, error: 'Invalid username or password' });
   }
   
-  // Auto-migrate: If user found in fallback AND MongoDB is available → migrate to MongoDB
+
   if (userResult.source === 'fallback' && mongoConnected) {
     try {
       await User.create(userResult.user);
       console.log(`✅ Auto-migrated user "${username}" to MongoDB`);
       
-      // Remove from fallback to avoid duplicates
+
       fallbackUsers = fallbackUsers.filter(u => u.username !== username);
     } catch (err) {
       if (err.code !== 11000) { // Ignore duplicate errors
@@ -296,15 +296,15 @@ app.post('/api/login', async (req, res) => {
   });
 });
 
-// Logout
+
 app.post('/api/logout', requireAuth, (req, res) => {
   tokens.delete(req.auth.token);
   res.json({ success: true });
 });
 
-// ========== FIXED SENSOR DATA ENDPOINTS ==========
 
-// Insert test sensor data (for manual testing)
+
+
 app.post('/api/data/test', async (req, res) => {
   try {
     const testData = {
@@ -320,7 +320,7 @@ app.post('/api/data/test', async (req, res) => {
     let result = null;
     let source = 'fallback';
     
-    // Try MongoDB first
+
     if (mongoConnected) {
       try {
         const doc = await GreenhouseData.create(testData);
@@ -332,7 +332,7 @@ app.post('/api/data/test', async (req, res) => {
       }
     }
     
-    // Fallback to memory
+
     if (!result) {
       memoryData = { ...testData };
       result = memoryData;
@@ -352,7 +352,7 @@ app.post('/api/data/test', async (req, res) => {
   }
 });
 
-// Get all sensor data (for debugging)
+
 app.get('/api/data/all', async (req, res) => {
   try {
     let data = [];
@@ -384,13 +384,13 @@ app.get('/api/data/all', async (req, res) => {
   }
 });
 
-// Insert sensor data (with auto-population if empty)
+
 app.post('/api/data', async (req, res) => {
   const { temperature, humidity, soilMoisture, lightLevel } = req.body;
   
   console.log('📝 Received sensor data:', { temperature, humidity, soilMoisture, lightLevel });
   
-  // Use values from request or default to memoryData
+
   const newData = {
     temperature: safeNumber(temperature, memoryData.temperature),
     humidity: safeNumber(humidity, memoryData.humidity),
@@ -401,7 +401,7 @@ app.post('/api/data', async (req, res) => {
   
   console.log('📊 Processed data:', newData);
   
-  // Update memory
+
   memoryData = { ...newData };
   
   let savedToMongo = false;
@@ -434,7 +434,7 @@ app.post('/api/data', async (req, res) => {
   }
 });
 
-// Sensor data - get current (with auto-insert if empty)
+
 app.get('/api/data/current', async (req, res) => {
   console.log('📊 GET /api/data/current called');
   
@@ -463,19 +463,19 @@ app.get('/api/data/current', async (req, res) => {
         data = latest;
         source = 'mongodb';
         
-        // Update memory with real data
+
         memoryData = { ...latest };
         
       } else {
         console.log('⚠️ No documents in MongoDB yet - checking if we should insert default data');
         
-        // Check if this is the first time or if user wants to insert
+
         const shouldInsert = req.query.autoInsert !== 'false';
         
         if (shouldInsert) {
           console.log('📝 Inserting default data into MongoDB...');
           
-          // Insert the exact data from your image
+
           const defaultData = {
             temperature: 20,
             humidity: 30,
@@ -518,7 +518,7 @@ app.get('/api/data/current', async (req, res) => {
   });
 });
 
-// Force insert specific data
+
 app.post('/api/data/force-insert', async (req, res) => {
   try {
     const { temperature = 20, humidity = 30, soilMoisture = 280, lightLevel = 600 } = req.body;
@@ -550,7 +550,7 @@ app.post('/api/data/force-insert', async (req, res) => {
   }
 });
 
-// Devices (unified)
+
 app.get('/api/devices/status', requireAuth, async (req, res) => {
   let device = null;
   
@@ -589,7 +589,7 @@ app.put('/api/devices/:device', requireAuth, async (req, res) => {
     }
   }
   
-  // Fallback
+
   if (deviceName === 'pump') fallbackDevices.pumpStatus = status;
   if (deviceName === 'cover') fallbackDevices.coverStatus = status;
   fallbackDevices.updatedAt = new Date();
@@ -602,7 +602,7 @@ app.put('/api/devices/:device', requireAuth, async (req, res) => {
   });
 });
 
-// Targets (unified)
+
 app.get('/api/targets', requireAuth, async (req, res) => {
   let targets = null;
   
@@ -639,7 +639,7 @@ app.put('/api/targets', requireAuth, async (req, res) => {
     }
   }
   
-  // Fallback
+
   fallbackTargets = { temperature, humidity, soil, light, plantType };
   res.json({ 
     success: true, 
@@ -649,7 +649,7 @@ app.put('/api/targets', requireAuth, async (req, res) => {
   });
 });
 
-// Logs (unified)
+
 app.post('/api/logs', requireAuth, async (req, res) => {
   const { message, type = 'SYSTEM' } = req.body;
   const logEntry = { message, type, createdAt: new Date() };
@@ -663,7 +663,7 @@ app.post('/api/logs', requireAuth, async (req, res) => {
     }
   }
   
-  // Fallback
+
   fallbackLogs.unshift(logEntry);
   if (fallbackLogs.length > 1000) fallbackLogs.pop();
   
@@ -689,7 +689,7 @@ app.get('/api/logs', requireAuth, async (req, res) => {
     }
   }
   
-  // Fallback
+
   let logs = fallbackLogs;
   if (type !== 'all') {
     logs = fallbackLogs.filter(log => log.type === type);
@@ -704,7 +704,7 @@ app.get('/api/logs', requireAuth, async (req, res) => {
   });
 });
 
-// Statistics (with fallback)
+
 app.get('/api/statistics', requireAuth, async (req, res) => {
   const { period = 'day' } = req.query;
   
@@ -736,7 +736,7 @@ app.get('/api/statistics', requireAuth, async (req, res) => {
     }
   }
   
-  // Fallback: return current data as statistics
+
   res.json({
     success: true,
     data: {
@@ -750,7 +750,7 @@ app.get('/api/statistics', requireAuth, async (req, res) => {
   });
 });
 
-// Emergency user management endpoint
+
 app.get('/api/users/fallback', (req, res) => {
   const adminSecret = process.env.ADMIN_SECRET || 'default-secret-change-me';
   const provided = req.headers['x-admin-secret'];
@@ -769,7 +769,7 @@ app.get('/api/users/fallback', (req, res) => {
   });
 });
 
-// Database initialization endpoint
+
 app.post('/api/database/init', async (req, res) => {
   try {
     console.log('🔄 Initializing database with sample data...');
@@ -811,8 +811,8 @@ app.post('/api/database/init', async (req, res) => {
   }
 });
 
-// Serve frontend - FIXED PATH (was broken)
-// Serve static files from multiple locations
+
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, '..', 'Front_End'))); // Add this line
 app.use(express.static(path.join(__dirname, '..', 'public')));    // And this line
@@ -832,7 +832,7 @@ app.get('/', (req, res) => {
     }
   }
   
-  // If no file found, send simple message
+
   res.send(`
     <html>
       <body>
@@ -857,7 +857,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Start server
+
 app.listen(PORT, () => {
   console.log(`🚀 Greenhouse backend running at http://localhost:${PORT}`);
   console.log(`📊 Mode: ${mongoConnected ? 'MongoDB + Fallback' : 'Fallback Only'}`);

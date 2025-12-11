@@ -29,9 +29,6 @@
                 <button type="submit" class="login-btn">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
-                <div class="login-info">
-                    <p>Demo login: <strong>user</strong> / <strong>pass</strong></p>
-                </div>
             </form>
         </div>
     </div>
@@ -57,17 +54,18 @@
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <div class="current-time" id="current-time">00:00:00</div>
+                <div class="current-time">
+                    <time id="current-time">00:00:00</time>
+                </div>
             </div>
         </header>
-                <div class="time-effects-toggle-container">
+        
+        <div class="time-effects-toggle-container">
             <button id="toggle-time-effects" class="time-effects-toggle-btn">
                 <i class="fas fa-eye"></i>
                 <span>Show Time Effects</span>
             </button>
         </div>
-
-        <div id="time-effects-overlay" class="time-effects-overlay"></div>
 
         <!-- Atmospheric Effects -->
         <div class="atmospheric-effects">
@@ -248,6 +246,7 @@
                             </div>
                         </div>
 
+                        <!-- Light Target -->
                         <div class="target-card">
                             <div class="target-header">
                                 <i class="fas fa-sun"></i>
@@ -267,6 +266,7 @@
                             </div>
                         </div>
 
+                        <!-- Soil Moisture Target -->
                         <div class="target-card">
                             <div class="target-header">
                                 <i class="fas fa-seedling"></i>
@@ -363,12 +363,11 @@
                     </div>
                 </div>
             </section>
-          <!-- ========== WATER PUMP SECTION ========== -->
+
+            <!-- Water Pump Section -->
             <section class="waterpump-section">
                 <div class="section-title">
                     <i class="fas fa-tint"></i> Water Pump & Irrigation System
-                    <div class="section-controls">
-                    </div>
                 </div>
                 
                 <div class="waterpump-grid">
@@ -470,11 +469,11 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Cover Section -->
             <section class="cover-section">
                 <div class="section-title">
                     <i class="fas fa-cloud-sun"></i> Greenhouse Cover Shade Status
-                    <div class="section-controls">
-                    </div>
                 </div>
                 <div class="cover-container">
                     <div class="cover-status-card" id="cover-status">
@@ -483,7 +482,7 @@
                         </div>
                         <div class="cover-info">
                             <h3>Greenhouse Shade Cover</h3>
-                            <p class="cover-state">Open</p>
+                            <p class="cover-state" id="cover-state">Open</p>
                             <p class="cover-detail">Allows natural sunlight and ventilation</p>
                         </div>
                         <button class="cover-toggle-btn" id="toggle-cover">
@@ -508,6 +507,7 @@
                 </div>
             </section>
 
+            <!-- Charts Section -->
             <section class="charts-section">
                 <div class="chart-container">
                     <h2 class="section-title">Environmental Trends Graph</h2>
@@ -516,6 +516,7 @@
                         <button class="chart-btn" data-chart="humidity">Humidity</button>
                         <button class="chart-btn" data-chart="soil">Soil Moisture</button>
                         <button class="chart-btn" data-chart="light">Light Level</button>
+                        <button class="chart-btn" data-chart="all">All</button>
                     </div>
                     <div class="chart-wrapper">
                         <canvas id="environment-chart"></canvas>
@@ -523,6 +524,7 @@
                 </div>
             </section>
 
+            <!-- Plant Health Section -->
             <section class="plant-health-section">
                 <h2 class="section-title">Plant Health Status</h2>
                 <div class="plant-grid">
@@ -624,6 +626,7 @@
                 </div>
             </section>
 
+            <!-- Logs Section -->
             <section class="logs-section">
                 <h2 class="section-title">System Logs & Alerts</h2>
                 <div class="logs-container">
@@ -635,48 +638,8 @@
                         <button class="log-mode-btn" data-mode="system">System</button>
                     </div>
                     
-                    <div class="logs-list">
-                        <div class="log-entry alert">
-                            <div class="log-time">14:32:15</div>
-                            <div class="log-message">Soil moisture dropped below 30% in Section B</div>
-                            <div class="log-type">ALERT</div>
-                        </div>
-                        <div class="log-entry irrigation">
-                            <div class="log-time">14:30:45</div>
-                            <div class="log-message">Automatic irrigation started for Tomato plants</div>
-                            <div class="log-type">IRRIGATION</div>
-                        </div>
-                        <div class="log-entry climate">
-                            <div class="log-time">14:28:10</div>
-                            <div class="log-message">Greenhouse cover opened for ventilation</div>
-                            <div class="log-type">CLIMATE</div>
-                        </div>
-                        <div class="log-entry system">
-                            <div class="log-time">14:25:33</div>
-                            <div class="log-message">Sensor #TEMP-004 recalibrated successfully</div>
-                            <div class="log-type">SYSTEM</div>
-                        </div>
-                        <div class="log-entry climate">
-                            <div class="log-time">14:20:15</div>
-                            <div class="log-message">Light levels optimal at 850 lux</div>
-                            <div class="log-type">CLIMATE</div>
-                        </div>
-                        <!-- Another Alert log -->
-                        <div class="log-entry alert">
-                            <div class="log-time">14:15:42</div>
-                            <div class="log-message">Temperature approaching upper limit (28°C)</div>
-                            <div class="log-type">ALERT</div>
-                        </div>
-                        <div class="log-entry system">
-                            <div class="log-time">14:10:05</div>
-                            <div class="log-message">Backup power system test completed</div>
-                            <div class="log-type">SYSTEM</div>
-                        </div>
-                        <div class="log-entry irrigation">
-                            <div class="log-time">14:05:22</div>
-                            <div class="log-message">Water reservoir at 85% capacity</div>
-                            <div class="log-type">IRRIGATION</div>
-                        </div>
+                    <div class="logs-list" id="logs-list">
+                        <!-- Logs will be added here dynamically -->
                     </div>
                     
                     <div class="log-controls">
@@ -694,7 +657,6 @@
             </section>
         </main>
         
-
         <footer class="footer">
             <div class="footer-content">
                 <p>Automated Herb Greenhouse; 2025</p>
@@ -706,6 +668,6 @@
         </footer>
     </div>
 
-    <div id="toast-container"></div>
+    <script src="embedded.js"></script>
 </body>
 </html>

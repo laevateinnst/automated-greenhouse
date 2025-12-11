@@ -56,14 +56,14 @@ public:
 
     void begin();
 
-    // Soil moisture
+
     int getSoilRaw();
     int getSoilPercent();
 
-    // DHT11
+
     uint8_t readTemperatureHumidity(float &temperature, float &humidity);
 
-    // LDR
+
     int getLightRaw();
     int getLightPercent();
 

@@ -1,11 +1,11 @@
-// ========== API INTEGRATION FOR MONGODB ==========
+
 const API_BASE_URL = window.location.origin;
 
-// ---------------- Authentication State ----------------
+
 let authToken = localStorage.getItem('authToken') || null;
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 
-// ---------------- Authentication Utilities ----------------
+
 function isAuthenticated() {
     return !!authToken && !!currentUser;
 }
@@ -28,7 +28,7 @@ async function handleUnauthorized() {
     showToast('Session expired. Please login again.', 'warning');
 }
 
-// ---------------- API REQUEST WRAPPER ----------------
+
 async function apiRequest(endpoint, method = 'GET', data = null, requireAuth = true) {
     const url = API_BASE_URL + endpoint;
 
@@ -56,7 +56,7 @@ async function apiRequest(endpoint, method = 'GET', data = null, requireAuth = t
     }
 }
 
-// ---------------- LOGIN / LOGOUT ----------------
+
 async function login(username, password) {
     try {
         const result = await apiRequest('/api/login', 'POST', { username, password }, false);
@@ -95,7 +95,7 @@ async function logout() {
     console.log('Logged out successfully');
 }
 
-// ---------------- DATA FETCHING ----------------
+
 async function getCurrentData() {
     try {
         const result = await apiRequest('/api/data/current', 'GET', null, false);
@@ -136,7 +136,7 @@ async function getSystemLogs(type = 'all', limit = 20) {
     }
 }
 
-// ---------------- DISPLAY FUNCTIONS ----------------
+
 async function displayCurrentData() {
     try {
         const data = await getCurrentData();
@@ -210,7 +210,7 @@ function updatePlantSelection(selectedPlant) {
     });
 }
 
-// ---------------- DASHBOARD INITIALIZATION ----------------
+
 async function initializeDashboardFromDB() {
     await Promise.all([
         displayCurrentData(),
@@ -219,7 +219,7 @@ async function initializeDashboardFromDB() {
     ]);
 }
 
-// ---------------- AUTO REFRESH ----------------
+
 let refreshInterval = null;
 function startAutoRefresh(interval = 10000) {
     if (refreshInterval) clearInterval(refreshInterval);
@@ -231,7 +231,7 @@ function stopAutoRefresh() {
     refreshInterval = null;
 }
 
-// ---------------- SESSION MANAGEMENT ----------------
+
 function checkApiSession() {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('currentUser');
@@ -252,7 +252,7 @@ function clearSession() {
     localStorage.removeItem('plantCareUser');
 }
 
-// ---------------- UI HELPER FUNCTIONS ----------------
+
 function updateElementText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
@@ -276,7 +276,7 @@ function showDashboard() {
     document.getElementById('main-container').style.display = 'block';
 }
 
-// ---------------- EXPORT ----------------
+
 window.greenhouseAPI = {
     login,
     logout,
@@ -294,7 +294,7 @@ window.greenhouseAPI = {
     showToast
 };
 
-// ---------------- AUTO INIT ----------------
+
 document.addEventListener('DOMContentLoaded', async () => {
     if (window.greenhouseAPI.checkApiSession()) {
         await initializeDashboardFromDB();

@@ -1,13 +1,11 @@
-// ========== PANEL VISIBILITY SYSTEM ==========
 
-// Panel visibility state
+
+
 let panelVisibility = {
     waterpump: true,
     cover: true,
     allVisible: true
 };
-
-// ========== WATER PUMP SYSTEM ==========
 
 let waterpumpState = {
     isActive: false,
@@ -22,54 +20,23 @@ let waterpumpState = {
     reservoirCapacity: 100
 };
 
-// Water consumption interval
 let waterConsumptionInterval = null;
-let waterRefillInterval = null;
-
-// ========== TIME-OF-DAY SYSTEM ==========
-
-// Time management variables
 let currentSimulatedTime = new Date();
 let timeSpeedMultiplier = 1;
 let isTimePaused = false;
-let timeMode = 'real'; // 'real', 'simulated', 'paused'
+let timeMode = 'real';
 
-// DOM Elements for time effects
-const timeEffectsOverlay = document.getElementById('time-effects-overlay');
-const sunElement = document.getElementById('sun-element');
-const moonElement = document.getElementById('moon-element');
-const starField = document.getElementById('star-field');
-const cloudsContainer = document.getElementById('clouds-container');
-const sunbeams = document.getElementById('sunbeams');
-const plantStateIndicator = document.getElementById('plant-state-indicator');
-const plantStateText = document.getElementById('plant-state-text');
-const plantStateDesc = document.getElementById('plant-state-desc');
-const periodIcon = document.getElementById('period-icon');
-const periodName = document.getElementById('period-name');
-const periodTime = document.getElementById('period-time');
-const timeProgressFill = document.getElementById('time-progress-fill');
-const sunriseTimeElement = document.getElementById('sunrise-time');
-const sunsetTimeElement = document.getElementById('sunset-time');
-const daylightHoursElement = document.getElementById('daylight-hours');
-const nightHoursElement = document.getElementById('night-hours');
-const realTimeBtn = document.getElementById('real-time-btn');
-const speedUpBtn = document.getElementById('speed-up-btn');
-const pauseTimeBtn = document.getElementById('pause-time-btn');
-const timeSimulationSlider = document.getElementById('time-simulation-slider');
-
-// Time configuration
 const timeConfig = {
-    sunrise: 6.5, // 6:30 AM
-    sunset: 19.75, // 7:45 PM
-    dawnStart: 5, // 5:00 AM
-    dawnEnd: 7, // 7:00 AM
-    duskStart: 18, // 6:00 PM
-    duskEnd: 20, // 8:00 PM
-    morningEnd: 12, // 12:00 PM
-    afternoonEnd: 17 // 5:00 PM
+    sunrise: 6.5,
+    sunset: 19.75,
+    dawnStart: 5,
+    dawnEnd: 7,
+    duskStart: 18,
+    duskEnd: 20,
+    morningEnd: 12,
+    afternoonEnd: 17
 };
 
-// ========== WATER PUMP DOM ELEMENTS ==========
 
 const waterpumpSection = document.querySelector('.waterpump-section');
 const coverSection = document.querySelector('.cover-section');
@@ -93,9 +60,6 @@ const waterTempElement = document.getElementById('water-temp');
 const autoStatusElement = document.getElementById('auto-status');
 const autoThresholdSlider = document.getElementById('auto-threshold');
 const thresholdValueElement = document.getElementById('threshold-value');
-
-// ========== ORIGINAL SYSTEM VARIABLES ==========
-
 const loginOverlay = document.getElementById('login-overlay');
 const loginForm = document.getElementById('login-form');
 const mainContainer = document.getElementById('main-container');
@@ -103,27 +67,22 @@ const loggedUserElement = document.getElementById('logged-user');
 const logoutBtn = document.getElementById('logout-btn');
 const plantNameDisplay = document.getElementById('plant-name-display');
 const currentPlantTypeElement = document.getElementById('current-plant-type');
-
 const plantOptions = document.querySelectorAll('.plant-option');
 const tempTargetSlider = document.getElementById('temp-target');
 const humidityTargetSlider = document.getElementById('humidity-target');
 const lightTargetSlider = document.getElementById('light-target');
 const soilTargetSlider = document.getElementById('soil-target');
-
 const tempTargetValue = document.getElementById('temp-target-value');
 const humidityTargetValue = document.getElementById('humidity-target-value');
 const lightTargetValue = document.getElementById('light-target-value');
 const soilTargetValue = document.getElementById('soil-target-value');
-
 const currentTempElement = document.getElementById('current-temp');
 const currentHumidityElement = document.getElementById('current-humidity');
 const currentLightElement = document.getElementById('current-light');
 const currentSoilElement = document.getElementById('current-soil');
-
 const savePresetBtn = document.getElementById('save-preset');
 const applyTargetsBtn = document.getElementById('apply-targets');
 const resetTargetsBtn = document.getElementById('reset-targets');
-
 const themeToggle = document.getElementById('theme-toggle');
 const currentTimeElement = document.getElementById('current-time');
 const temperatureValueElement = document.getElementById('temperature-value');
@@ -139,9 +98,23 @@ const logsList = document.querySelector('.logs-list');
 const refreshLogsBtn = document.getElementById('refresh-logs');
 const addLogBtn = document.getElementById('add-log');
 const exportLogsBtn = document.getElementById('export-logs');
+const sunElement = document.getElementById('sun-element');
+const moonElement = document.getElementById('moon-element');
+const periodIcon = document.getElementById('period-icon');
+const periodName = document.getElementById('period-name');
+const periodTime = document.getElementById('period-time');
+const timeProgressFill = document.getElementById('time-progress-fill');
+const realTimeBtn = document.getElementById('real-time-btn');
+const speedUpBtn = document.getElementById('speed-up-btn');
+const pauseTimeBtn = document.getElementById('pause-time-btn');
+const timeSimulationSlider = document.getElementById('time-simulation-slider');
+const toggleTimeEffectsBtn = document.getElementById('toggle-time-effects');
 
 let environmentChart;
 let currentChartType = 'temperature';
+let timeEffectsVisible = true;
+let apiAvailable = false;
+let apiBaseUrl = 'http://localhost:5001';  // Explicitly set to your server
 
 const plantPresets = {
     cilantro: {
@@ -200,154 +173,511 @@ let greenhouseState = {
     systemActive: true
 };
 
-// ========== INITIALIZATION ==========
 
-document.addEventListener('DOMContentLoaded', () => {
+async function checkApiAvailability() {
+    console.log('Checking API availability...');
+    
+    try {
+
+        const response = await fetch('/api/health');
+        if (response.ok) {
+            const data = await response.json();
+            console.log('API is available:', data);
+            apiAvailable = true;
+            return true;
+        }
+    } catch (error) {
+        console.log('API not available, using simulated data:', error.message);
+        apiAvailable = false;
+    }
+    
+    return false;
+}
+
+
+
+const greenhouseAPI = {
+
+    authToken: localStorage.getItem('authToken') || null,
+    currentUser: JSON.parse(localStorage.getItem('currentUser')) || null,
+    
+
+
+
+
+    
+
+    login: async function(username, password) {
+    try {
+
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+
+            this.authToken = data.token;
+            this.currentUser = data.user;
+            
+            localStorage.setItem('authToken', this.authToken);
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('plantCareUser', username);
+            
+            console.log('✅ Login successful via backend:', data);
+            return data;
+        } else {
+            console.log('❌ Login failed via backend:', data.error);
+            return data;
+        }
+        
+    } catch (error) {
+        console.error('API login failed, using fallback:', error.message);
+        
+
+        const demoUsers = {
+            'admin': 'admin123',
+            'demo': 'demo123'
+        };
+        
+        if (demoUsers[username] && demoUsers[username] === password) {
+            this.authToken = 'demo-token-' + Date.now();
+            this.currentUser = { name: username, username: username };
+            
+            localStorage.setItem('authToken', this.authToken);
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+            localStorage.setItem('plantCareUser', username);
+            
+            return {
+                success: true,
+                token: this.authToken,
+                user: this.currentUser,
+                source: 'fallback'
+            };
+        } else {
+            return {
+                success: false,
+                error: 'Invalid username or password',
+                source: 'fallback'
+            };
+        }
+    }
+},
+    
+    logout: async function() {
+        if (this.isApiLoaded()) {
+            return await window.greenhouseAPI.logout();
+        }
+        
+
+        this.authToken = null;
+        this.currentUser = null;
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('plantCareUser');
+        return { success: true };
+    },
+    
+    checkApiSession: function() {
+        if (this.isApiLoaded()) {
+            return window.greenhouseAPI.checkApiSession();
+        }
+        
+
+        return !!localStorage.getItem('plantCareUser');
+    },
+    
+    getCurrentData: async function() {
+    try {
+
+        const result = await this.apiRequest('/api/data/current', 'GET', null, false);
+        
+        if (result.success) {
+            return result.data;
+        }
+    } catch (error) {
+        console.error('Failed to get current data:', error);
+    }
+    
+
+    return {
+        temperature: 24.5,
+        humidity: 65,
+        soilMoisture: 72,
+        lightLevel: 850,
+        recordedAt: new Date()
+    };
+},
+    
+    getDeviceStatus: async function() {
+    try {
+        if (this.authToken) {
+            const result = await this.apiRequest('/api/devices/status', 'GET', null, true);
+            
+            if (result.success) {
+                return result.data;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get device status:', error);
+    }
+    
+
+    return {
+        pumpStatus: waterpumpState.isActive ? 'ON' : 'OFF',
+        coverStatus: greenhouseState.coverOpen ? 'OPEN' : 'CLOSED'
+    };
+},
+    
+    displayCurrentData: async function() {
+    try {
+        const data = await this.getCurrentData();
+        
+        if (data) {
+            displaySensorData(data);
+            return true;
+        }
+    } catch (error) {
+        console.error('Failed to display current data:', error);
+    }
+    
+
+    updateSensorReadingsSimulated();
+    return false;
+},
+    
+    displayUserTargets: async function() {
+    try {
+        if (this.authToken) {
+            const result = await this.apiRequest('/api/targets', 'GET', null, true);
+            
+            if (result.success && result.data) {
+
+                const targets = result.data;
+                
+                if (tempTargetSlider) tempTargetSlider.value = targets.temperature || 24;
+                if (humidityTargetSlider) humidityTargetSlider.value = targets.humidity || 65;
+                if (lightTargetSlider) lightTargetSlider.value = targets.light || 850;
+                if (soilTargetSlider) soilTargetSlider.value = targets.soil || 70;
+                
+                updateTargetDisplays();
+                
+
+                if (targets.plantType && targets.plantType !== currentSettings.selectedPlant) {
+                    currentSettings.selectedPlant = targets.plantType;
+                    updatePlantSelectionUI();
+                    updatePlantDisplay(targets.plantType);
+                }
+                
+                return true;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to get user targets:', error);
+    }
+    
+
+    loadSavedSettings();
+    return false;
+},
+    
+
+    apiRequest: async function(endpoint, method = 'GET', data = null, requireAuth = true) {
+    try {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+
+        if (requireAuth && this.authToken) {
+            headers['Authorization'] = `Bearer ${this.authToken}`;
+        }
+        
+        const options = {
+            method: method,
+            headers: headers
+        };
+        
+        if (data && (method === 'POST' || method === 'PUT')) {
+            options.body = JSON.stringify(data);
+        }
+        
+        const response = await fetch(endpoint, options);
+        return await response.json();
+        
+    } catch (error) {
+        console.error(`API Request failed (${method} ${endpoint}):`, error);
+        
+
+        if (endpoint === '/api/data/current' && method === 'GET') {
+            return {
+                success: true,
+                data: {
+                    temperature: 24.5,
+                    humidity: 65,
+                    soilMoisture: 72,
+                    lightLevel: 850,
+                    recordedAt: new Date()
+                },
+                source: 'simulated'
+            };
+        }
+        
+        return { 
+            success: false, 
+            error: 'API unavailable', 
+            source: 'fallback' 
+        };
+    }
+}
+};
+
+
+window.greenhouseAPI = greenhouseAPI;
+
+
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('Automated Herb Greenhouse System Initializing...');
     
+
+    await checkApiAvailability();
+    
+    if (!apiAvailable) {
+        console.warn('Backend API not available. Running in simulation mode.');
+        showToast('Running in simulation mode (API unavailable)', 'warning');
+    } else {
+        console.log('Backend API is available');
+        showToast('Connected to greenhouse API', 'success');
+    }
+    
     checkLoginStatus();
+});
+
+
+async function checkLoginStatus() {
+    console.log('Checking login status...');
+    
+
+    if (greenhouseAPI.checkApiSession()) {
+        console.log('User authenticated');
+        const user = greenhouseAPI.currentUser || JSON.parse(localStorage.getItem('currentUser'));
+        currentSettings.user = user?.name || localStorage.getItem('plantCareUser') || 'User';
+        
+        if (loggedUserElement) loggedUserElement.textContent = currentSettings.user;
+        
+        showDashboard();
+        initializeEverything();
+        
+
+        await fetchInitialDataFromDB();
+        return;
+    }
+    
+
+    const savedUser = localStorage.getItem('plantCareUser');
+    if (savedUser) {
+        console.log('User found in localStorage (fallback):', savedUser);
+        currentSettings.user = savedUser;
+        if (loggedUserElement) loggedUserElement.textContent = savedUser;
+        showDashboard();
+        initializeEverything();
+    } else {
+        console.log('No user found, showing login');
+        showLogin();
+    }
+}
+
+async function fetchInitialDataFromDB() {
+    try {
+        console.log('Fetching initial data...');
+        
+
+        await greenhouseAPI.displayCurrentData();
+        
+
+        if (greenhouseAPI.authToken) {
+            const deviceStatus = await greenhouseAPI.getDeviceStatus();
+            if (deviceStatus) {
+                waterpumpState.isActive = deviceStatus.pumpStatus === 'ON';
+                updateWaterPumpDisplay();
+                
+                greenhouseState.coverOpen = deviceStatus.coverStatus === 'OPEN';
+                updateCoverDisplay();
+            }
+            
+
+            await greenhouseAPI.displayUserTargets();
+        }
+        
+        console.log('Database data loaded successfully');
+        showToast('Connected to database successfully', 'success');
+        
+    } catch (error) {
+        console.error('Failed to fetch data:', error);
+
+        updateSensorReadingsSimulated();
+        loadSavedSettings();
+        showToast('Using simulated data', 'info');
+    }
+}
+
+function showLogin() {
+    if (loginOverlay) loginOverlay.style.display = 'flex';
+    if (mainContainer) mainContainer.style.display = 'none';
+}
+
+function showDashboard() {
+    if (loginOverlay) loginOverlay.style.display = 'none';
+    if (mainContainer) mainContainer.style.display = 'block';
+    
+
+    addSystemLog(`User "${currentSettings.user}" logged in`);
+    
+    loadSavedSettings();
+}
+
+function initializeEverything() {
     initializeDashboard();
     initializeTimeSystem();
     initializeWaterPumpSystem();
     setupPanelVisibilityControls();
-});
+    initializeTimeEffectsToggle();
+}
 
-// ========== PANEL VISIBILITY FUNCTIONS ==========
 
-function setupPanelVisibilityControls() {
-    // Toggle water pump visibility
-    if (toggleWaterpumpVisibilityBtn) {
-        toggleWaterpumpVisibilityBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            togglePanelVisibility('waterpump');
-        });
+if (loginForm) {
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        // Make waterpump section title clickable
-        const waterpumpTitle = waterpumpSection.querySelector('.section-title');
-        if (waterpumpTitle) {
-            waterpumpTitle.style.cursor = 'pointer';
-            waterpumpTitle.addEventListener('click', (e) => {
-                if (e.target !== toggleWaterpumpVisibilityBtn && !toggleWaterpumpVisibilityBtn.contains(e.target)) {
-                    togglePanelVisibility('waterpump');
-                }
-            });
-        }
-    }
-    
-    // Toggle cover visibility
-    if (toggleCoverVisibilityBtn) {
-        toggleCoverVisibilityBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            togglePanelVisibility('cover');
-        });
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const username = usernameInput.value;
+        const password = passwordInput.value;
         
-        // Make cover section title clickable
-        const coverTitle = coverSection.querySelector('.section-title');
-        if (coverTitle) {
-            coverTitle.style.cursor = 'pointer';
-            coverTitle.addEventListener('click', (e) => {
-                if (e.target !== toggleCoverVisibilityBtn && !toggleCoverVisibilityBtn.contains(e.target)) {
-                    togglePanelVisibility('cover');
+        if (username && password) {
+            try {
+                const result = await greenhouseAPI.login(username, password);
+                
+                if (result.success) {
+                    currentSettings.user = result.user?.name || username;
+                    if (loggedUserElement) loggedUserElement.textContent = currentSettings.user;
+                    
+                    showDashboard();
+                    initializeEverything();
+                    
+
+                    await fetchInitialDataFromDB();
+                    
+                    showToast(`Welcome back, ${currentSettings.user}!`, 'success');
+                    
+
+                    usernameInput.value = '';
+                    passwordInput.value = '';
+                } else {
+                    showToast('Invalid username or password', 'error');
                 }
-            });
-        }
-    }
-    
-    // Load saved visibility state
-    loadVisibilityState();
-}
-
-function loadVisibilityState() {
-    const savedState = localStorage.getItem('panelVisibility');
-    if (savedState) {
-        panelVisibility = JSON.parse(savedState);
-        updatePanelVisibility();
-    }
-}
-
-function saveVisibilityState() {
-    localStorage.setItem('panelVisibility', JSON.stringify(panelVisibility));
-}
-
-function updatePanelVisibility() {
-    // Update waterpump section
-    if (waterpumpSection) {
-        if (panelVisibility.waterpump) {
-            waterpumpSection.classList.remove('hidden');
-            if (toggleWaterpumpVisibilityBtn) {
-                const icon = toggleWaterpumpVisibilityBtn.querySelector('i');
-                if (icon) icon.className = 'fas fa-eye-slash';
-                toggleWaterpumpVisibilityBtn.title = 'Hide Water Pump';
+            } catch (error) {
+                console.error('Login error:', error);
+                showToast('Login failed. Please try again.', 'error');
             }
         } else {
-            waterpumpSection.classList.add('hidden');
-            if (toggleWaterpumpVisibilityBtn) {
-                const icon = toggleWaterpumpVisibilityBtn.querySelector('i');
-                if (icon) icon.className = 'fas fa-eye';
-                toggleWaterpumpVisibilityBtn.title = 'Show Water Pump';
-            }
+            showToast('Please enter both username and password', 'error');
         }
-    }
-    
-    // Update cover section
-    if (coverSection) {
-        if (panelVisibility.cover) {
-            coverSection.classList.remove('hidden');
-            if (toggleCoverVisibilityBtn) {
-                const icon = toggleCoverVisibilityBtn.querySelector('i');
-                if (icon) icon.className = 'fas fa-eye-slash';
-                toggleCoverVisibilityBtn.title = 'Hide Cover';
-            }
-        } else {
-            coverSection.classList.add('hidden');
-            if (toggleCoverVisibilityBtn) {
-                const icon = toggleCoverVisibilityBtn.querySelector('i');
-                if (icon) icon.className = 'fas fa-eye';
-                toggleCoverVisibilityBtn.title = 'Show Cover';
-            }
-        }
-    }
-    
-    // Update all panels state
-    panelVisibility.allVisible = panelVisibility.waterpump && panelVisibility.cover;
-    
-    // Save state
-    saveVisibilityState();
+    });
 }
 
-function togglePanelVisibility(panelType) {
-    // Toggle the specific panel
-    panelVisibility[panelType] = !panelVisibility[panelType];
-    
-    // Update the display
-    updatePanelVisibility();
-    
-    // Show feedback
-    const panelName = panelType === 'waterpump' ? 'Water Pump' : 'Greenhouse Cover';
-    showToast(`${panelName} panel ${panelVisibility[panelType] ? 'shown' : 'hidden'}`, 'info');
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async function() {
+        try {
+            await greenhouseAPI.logout();
+            
+
+            localStorage.removeItem('plantCareUser');
+            localStorage.removeItem('plantCareSettings');
+            localStorage.removeItem('waterPumpState');
+            
+            currentSettings.user = null;
+            showLogin();
+            showToast('Successfully logged out', 'success');
+            
+        } catch (error) {
+            console.error('Logout error:', error);
+            showToast('Logout failed', 'error');
+        }
+    });
 }
 
-// ========== WATER PUMP FUNCTIONS ==========
+
+function initializeDashboard() {
+    console.log('Initializing dashboard...');
+
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+
+    startDataRefresh();
+    
+    setTimeout(() => {
+        initializeChart();
+    }, 500);
+    
+    setupEventListeners();
+}
+
+function startDataRefresh() {
+
+    setInterval(async () => {
+        await updateSensorReadings();
+    }, 10000);
+}
+
+function setTheme(theme) {
+    if (theme === 'dark') {
+        document.body.classList.remove('light-mode');
+        document.body.classList.add('dark-mode');
+        if (themeToggle) themeToggle.checked = true;
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.body.classList.remove('dark-mode');
+        document.body.classList.add('light-mode');
+        if (themeToggle) themeToggle.checked = false;
+        localStorage.setItem('theme', 'light');
+    }
+    
+    if (environmentChart) {
+        updateChartColors();
+    }
+}
+
+function updateTime() {
+    if (!currentTimeElement) return;
+    
+    const now = timeMode === 'real' ? new Date() : currentSimulatedTime;
+    const timeString = now.toLocaleTimeString();
+    currentTimeElement.textContent = timeString;
+}
+
 
 function initializeWaterPumpSystem() {
     console.log('Initializing Water Pump System...');
     
-    // Load saved state
     loadWaterPumpState();
-    
-    // Update initial display
     updateWaterPumpDisplay();
-    
-    // Setup event listeners
     setupWaterPumpListeners();
-    
-    // Start water level simulation
     startWaterLevelSimulation();
-    
-    // Start auto irrigation monitoring
     startAutoIrrigationMonitoring();
-    
-    // Update soil moisture display
     updateSoilMoistureDisplay();
 }
 
@@ -372,7 +702,6 @@ function saveWaterPumpState() {
 }
 
 function updateWaterPumpDisplay() {
-    // Update pump status
     if (waterpumpState.isActive) {
         waterpumpStatusElement.textContent = 'IRRIGATING';
         waterpumpStatusElement.classList.add('active');
@@ -381,7 +710,6 @@ function updateWaterPumpDisplay() {
             waterpumpStateIndicator.style.animation = 'pulse 0.5s infinite';
         }
         
-        // Update button
         if (toggleWaterpumpButton) {
             toggleWaterpumpButton.innerHTML = '<i class="fas fa-stop"></i> Stop Irrigation';
             toggleWaterpumpButton.classList.add('active');
@@ -394,20 +722,15 @@ function updateWaterPumpDisplay() {
             waterpumpStateIndicator.style.animation = 'pulse 2s infinite';
         }
         
-        // Update button
         if (toggleWaterpumpButton) {
             toggleWaterpumpButton.innerHTML = '<i class="fas fa-play"></i> Start Irrigation';
             toggleWaterpumpButton.classList.remove('active');
         }
     }
     
-    // Update irrigation time
     updateIrrigationTime();
-    
-    // Update water reservoir
     updateWaterReservoir();
     
-    // Update manual mode button
     if (manualModeButton) {
         if (waterpumpState.isManualMode) {
             manualModeButton.classList.add('active');
@@ -418,20 +741,10 @@ function updateWaterPumpDisplay() {
         }
     }
     
-    // Update pump info
-    if (pumpDurationElement) {
-        pumpDurationElement.textContent = `${waterpumpState.irrigationDuration} min`;
-    }
+    if (pumpDurationElement) pumpDurationElement.textContent = `${waterpumpState.irrigationDuration} min`;
+    if (pumpFlowRateElement) pumpFlowRateElement.textContent = `${waterpumpState.flowRate} L/min`;
+    if (waterTempElement) waterTempElement.textContent = `${waterpumpState.waterTemperature}°C`;
     
-    if (pumpFlowRateElement) {
-        pumpFlowRateElement.textContent = `${waterpumpState.flowRate} L/min`;
-    }
-    
-    if (waterTempElement) {
-        waterTempElement.textContent = `${waterpumpState.waterTemperature}°C`;
-    }
-    
-    // Update auto irrigation status
     if (autoStatusElement) {
         if (waterpumpState.isAutoIrrigationEnabled && !waterpumpState.isManualMode) {
             autoStatusElement.textContent = 'Enabled';
@@ -442,14 +755,8 @@ function updateWaterPumpDisplay() {
         }
     }
     
-    // Update threshold value
-    if (thresholdValueElement) {
-        thresholdValueElement.textContent = `${waterpumpState.autoThreshold}%`;
-    }
-    
-    if (autoThresholdSlider) {
-        autoThresholdSlider.value = waterpumpState.autoThreshold;
-    }
+    if (thresholdValueElement) thresholdValueElement.textContent = `${waterpumpState.autoThreshold}%`;
+    if (autoThresholdSlider) autoThresholdSlider.value = waterpumpState.autoThreshold;
 }
 
 function updateIrrigationTime() {
@@ -462,24 +769,16 @@ function updateIrrigationTime() {
     
     if (waterpumpState.isActive) {
         waterpumpDetailElement.textContent = 'Currently irrigating plants...';
-        if (lastIrrigationElement) {
-            lastIrrigationElement.textContent = 'Now';
-        }
+        lastIrrigationElement.textContent = 'Now';
     } else if (hours > 0) {
         waterpumpDetailElement.textContent = `Auto mode: irrigate when soil < ${waterpumpState.autoThreshold}%`;
-        if (lastIrrigationElement) {
-            lastIrrigationElement.textContent = `${hours}h ago`;
-        }
+        lastIrrigationElement.textContent = `${hours}h ago`;
     } else if (minutes > 0) {
         waterpumpDetailElement.textContent = `Auto mode: irrigate when soil < ${waterpumpState.autoThreshold}%`;
-        if (lastIrrigationElement) {
-            lastIrrigationElement.textContent = `${minutes}m ago`;
-        }
+        lastIrrigationElement.textContent = `${minutes}m ago`;
     } else {
         waterpumpDetailElement.textContent = `Auto mode: irrigate when soil < ${waterpumpState.autoThreshold}%`;
-        if (lastIrrigationElement) {
-            lastIrrigationElement.textContent = 'Just now';
-        }
+        lastIrrigationElement.textContent = 'Just now';
     }
 }
 
@@ -489,7 +788,6 @@ function updateWaterReservoir() {
     if (reservoirFillElement) {
         reservoirFillElement.style.width = `${waterLevel}%`;
         
-        // Update color based on water level
         if (waterLevel < 20) {
             reservoirFillElement.style.background = 'linear-gradient(to right, var(--danger-color), #ef5350)';
         } else if (waterLevel < 50) {
@@ -502,7 +800,6 @@ function updateWaterReservoir() {
     if (reservoirPercentageElement) {
         reservoirPercentageElement.textContent = `${Math.round(waterLevel)}%`;
         
-        // Color coding based on water level
         if (waterLevel < 20) {
             reservoirPercentageElement.style.color = 'var(--danger-color)';
         } else if (waterLevel < 50) {
@@ -518,8 +815,117 @@ function updateWaterReservoir() {
     }
 }
 
+function setupWaterPumpListeners() {
+    if (toggleWaterpumpButton) {
+        toggleWaterpumpButton.addEventListener('click', async function() {
+            try {
+                const newStatus = waterpumpState.isActive ? 'OFF' : 'ON';
+                
+
+                await greenhouseAPI.apiRequest(`/api/devices/pump`, 'PUT', { 
+                    status: newStatus 
+                }, true);
+                
+                waterpumpState.isActive = !waterpumpState.isActive;
+                waterpumpState.lastIrrigation = new Date();
+                
+
+                await greenhouseAPI.apiRequest('/api/logs', 'POST', {
+                    message: `Water pump ${waterpumpState.isActive ? 'started' : 'stopped'}`,
+                    type: 'IRRIGATION'
+                }, true);
+                
+                updateWaterPumpDisplay();
+                
+                showToast(waterpumpState.isActive ? 'Irrigation started' : 'Irrigation stopped', 'success');
+                
+                saveWaterPumpState();
+                
+            } catch (error) {
+                console.error('Failed to toggle water pump:', error);
+                showToast('Failed to control water pump. Using local mode.', 'warning');
+                
+
+                waterpumpState.isActive = !waterpumpState.isActive;
+                waterpumpState.lastIrrigation = new Date();
+                updateWaterPumpDisplay();
+                saveWaterPumpState();
+                showToast(waterpumpState.isActive ? 'Irrigation started (local)' : 'Irrigation stopped (local)', 'info');
+            }
+        });
+    }
+    
+    if (manualModeButton) {
+        manualModeButton.addEventListener('click', function() {
+            waterpumpState.isManualMode = !waterpumpState.isManualMode;
+            waterpumpState.isAutoIrrigationEnabled = !waterpumpState.isManualMode;
+            
+            addSystemLog(`Manual mode ${waterpumpState.isManualMode ? 'enabled' : 'disabled'}`);
+            showToast(`Manual mode ${waterpumpState.isManualMode ? 'ON' : 'OFF'}`, 'info');
+            updateWaterPumpDisplay();
+            saveWaterPumpState();
+        });
+    }
+    
+    if (autoThresholdSlider) {
+        autoThresholdSlider.addEventListener('input', function() {
+            waterpumpState.autoThreshold = parseInt(this.value);
+            if (thresholdValueElement) thresholdValueElement.textContent = `${waterpumpState.autoThreshold}%`;
+            saveWaterPumpState();
+            showToast(`Auto-irrigation threshold set to ${waterpumpState.autoThreshold}%`, 'info');
+        });
+    }
+}
+
+function startWaterLevelSimulation() {
+    setInterval(() => {
+        if (!waterpumpState.isActive) {
+            if (waterpumpState.waterLevel > 0) {
+                waterpumpState.waterLevel -= Math.random() * 0.01;
+            }
+            
+            if (waterpumpState.waterLevel < 50 && Math.random() < 0.1) {
+                waterpumpState.waterLevel += Math.random() * 10;
+                waterpumpState.waterLevel = Math.min(100, waterpumpState.waterLevel);
+                addIrrigationLog('Water reservoir auto-refilled');
+            }
+            
+            updateWaterReservoir();
+        }
+        
+        updateSoilMoistureDisplay();
+    }, 30000);
+}
+
+function startAutoIrrigationMonitoring() {
+    setInterval(() => {
+        if (waterpumpState.isAutoIrrigationEnabled && !waterpumpState.isManualMode && !waterpumpState.isActive) {
+            const soilValueElement = document.getElementById('soil-value');
+            if (soilValueElement) {
+                const soilText = soilValueElement.textContent;
+                const soilValue = parseFloat(soilText.replace(/[^\d.]/g, ''));
+                
+                if (soilValue < waterpumpState.autoThreshold && waterpumpState.waterLevel > 20) {
+                    startIrrigation('auto');
+                }
+            }
+        }
+        
+        if (waterpumpState.isActive) {
+            const soilValueElement = document.getElementById('soil-value');
+            if (soilValueElement) {
+                const soilText = soilValueElement.textContent;
+                const soilValue = parseFloat(soilText.replace(/[^\d.]/g, ''));
+                
+                if (soilValue > 70 || waterpumpState.waterLevel <= 5) {
+                    stopIrrigation('auto');
+                }
+            }
+        }
+    }, 60000);
+}
+
 function updateSoilMoistureDisplay() {
-    // Get current soil moisture from the main dashboard
     const soilValueElement = document.getElementById('soil-value');
     if (soilValueElement && currentSoilPumpElement && soilFillElement) {
         const soilText = soilValueElement.textContent;
@@ -528,7 +934,6 @@ function updateSoilMoistureDisplay() {
         currentSoilPumpElement.textContent = `${soilValue}%`;
         soilFillElement.style.width = `${soilValue}%`;
         
-        // Color coding based on soil moisture
         if (soilValue < 40) {
             soilFillElement.style.background = 'linear-gradient(to right, var(--danger-color), #ef5350)';
             currentSoilPumpElement.style.color = 'var(--danger-color)';
@@ -541,7 +946,6 @@ function updateSoilMoistureDisplay() {
         }
     }
     
-    // Update soil temperature based on time of day
     if (soilTempElement) {
         const currentHour = timeMode === 'real' ? 
             new Date().getHours() + new Date().getMinutes() / 60 : 
@@ -554,95 +958,6 @@ function updateSoilMoistureDisplay() {
     }
 }
 
-function startWaterLevelSimulation() {
-    // Simulate natural water evaporation and replenishment
-    setInterval(() => {
-        if (!waterpumpState.isActive) {
-            // Natural evaporation when pump is off
-            if (waterpumpState.waterLevel > 0) {
-                waterpumpState.waterLevel -= Math.random() * 0.01;
-            }
-            
-            // Auto-refill when water is low (simulating rain/refill system)
-            if (waterpumpState.waterLevel < 50 && Math.random() < 0.1) {
-                waterpumpState.waterLevel += Math.random() * 10;
-                waterpumpState.waterLevel = Math.min(100, waterpumpState.waterLevel);
-                addIrrigationLog('Water reservoir auto-refilled');
-            }
-            
-            updateWaterReservoir();
-        }
-        
-        // Update soil moisture display
-        updateSoilMoistureDisplay();
-    }, 30000); // Every 30 seconds
-}
-
-function startAutoIrrigationMonitoring() {
-    setInterval(() => {
-        if (waterpumpState.isAutoIrrigationEnabled && !waterpumpState.isManualMode && !waterpumpState.isActive) {
-            const soilValueElement = document.getElementById('soil-value');
-            if (soilValueElement) {
-                const soilText = soilValueElement.textContent;
-                const soilValue = parseFloat(soilText.replace(/[^\d.]/g, ''));
-                
-                // Check if soil is too dry
-                if (soilValue < waterpumpState.autoThreshold && 
-                    waterpumpState.waterLevel > 20) {
-                    
-                    // Auto start irrigation
-                    startIrrigation('auto');
-                }
-            }
-        }
-        
-        // Auto stop irrigation when soil is moist enough or water is low
-        if (waterpumpState.isActive) {
-            const soilValueElement = document.getElementById('soil-value');
-            if (soilValueElement) {
-                const soilText = soilValueElement.textContent;
-                const soilValue = parseFloat(soilText.replace(/[^\d.]/g, ''));
-                
-                if (soilValue > 70 || waterpumpState.waterLevel <= 5) {
-                    stopIrrigation('auto');
-                }
-            }
-        }
-    }, 60000); // Check every minute
-}
-
-function setupWaterPumpListeners() {
-    // Toggle water pump
-    if (toggleWaterpumpButton) {
-        toggleWaterpumpButton.addEventListener('click', toggleWaterPump);
-    }
-    
-    // Toggle manual mode
-    if (manualModeButton) {
-        manualModeButton.addEventListener('click', toggleManualMode);
-    }
-    
-    // Auto threshold slider
-    if (autoThresholdSlider) {
-        autoThresholdSlider.addEventListener('input', function() {
-            waterpumpState.autoThreshold = parseInt(this.value);
-            if (thresholdValueElement) {
-                thresholdValueElement.textContent = `${waterpumpState.autoThreshold}%`;
-            }
-            saveWaterPumpState();
-            showToast(`Auto-irrigation threshold set to ${waterpumpState.autoThreshold}%`, 'info');
-        });
-    }
-}
-
-function toggleWaterPump() {
-    if (waterpumpState.isActive) {
-        stopIrrigation('manual');
-    } else {
-        startIrrigation('manual');
-    }
-}
-
 function startIrrigation(source = 'manual') {
     if (waterpumpState.waterLevel < 10) {
         showToast('Cannot start irrigation: Water level too low!', 'error');
@@ -652,56 +967,36 @@ function startIrrigation(source = 'manual') {
     waterpumpState.isActive = true;
     waterpumpState.lastIrrigation = new Date();
     
-    // Add log entry
     const logType = source === 'auto' ? 'Auto irrigation started (soil too dry)' : 'Manual irrigation started';
     addIrrigationLog(logType);
     
-    // Show toast notification
     showToast(source === 'auto' ? 'Auto irrigation started' : 'Irrigation started', 'success');
-    
-    // Update display
     updateWaterPumpDisplay();
-    
-    // Start water consumption
     startWaterConsumption();
-    
-    // Save state
     saveWaterPumpState();
 }
 
 function stopIrrigation(source = 'manual') {
     waterpumpState.isActive = false;
-    
-    // Stop water consumption
     stopWaterConsumption();
     
-    // Add log entry
     const logType = source === 'auto' ? 'Auto irrigation stopped (soil moist enough)' : 'Irrigation stopped';
     addIrrigationLog(logType);
     
-    // Show toast notification
     showToast(source === 'auto' ? 'Auto irrigation stopped' : 'Irrigation stopped', 'info');
-    
-    // Update display
     updateWaterPumpDisplay();
-    
-    // Save state
     saveWaterPumpState();
 }
 
 function startWaterConsumption() {
-    if (waterConsumptionInterval) {
-        clearInterval(waterConsumptionInterval);
-    }
+    if (waterConsumptionInterval) clearInterval(waterConsumptionInterval);
     
     waterConsumptionInterval = setInterval(() => {
         if (waterpumpState.isActive && waterpumpState.waterLevel > 0) {
-            // Consume water while irrigating
-            waterpumpState.waterLevel -= 0.5; // 0.5% per second
+            waterpumpState.waterLevel -= 0.5;
             waterpumpState.waterLevel = Math.max(0, waterpumpState.waterLevel);
             updateWaterReservoir();
             
-            // Auto stop if water runs out
             if (waterpumpState.waterLevel <= 0) {
                 stopIrrigation('auto');
                 showToast('Irrigation stopped: Water reservoir empty!', 'error');
@@ -719,29 +1014,11 @@ function stopWaterConsumption() {
     }
 }
 
-function toggleManualMode() {
-    waterpumpState.isManualMode = !waterpumpState.isManualMode;
-    
-    // Update auto irrigation status
-    waterpumpState.isAutoIrrigationEnabled = !waterpumpState.isManualMode;
-    
-    // Add log entry
-    addSystemLog(`Manual mode ${waterpumpState.isManualMode ? 'enabled' : 'disabled'}`);
-    
-    // Show toast notification
-    showToast(`Manual mode ${waterpumpState.isManualMode ? 'ON' : 'OFF'}`, 'info');
-    
-    // Update display
-    updateWaterPumpDisplay();
-    
-    // Save state
-    saveWaterPumpState();
-}
-
 function addIrrigationLog(message) {
     const now = new Date();
     const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
     
+
     const newLog = document.createElement('div');
     newLog.className = 'log-entry irrigation';
     newLog.innerHTML = `
@@ -753,85 +1030,162 @@ function addIrrigationLog(message) {
     if (logsList) {
         logsList.prepend(newLog);
         
-        // Keep only last 20 logs
         const allLogs = logsList.querySelectorAll('.log-entry');
         if (allLogs.length > 20) {
             logsList.removeChild(allLogs[allLogs.length - 1]);
         }
     }
+    
+
+    greenhouseAPI.apiRequest('/api/logs', 'POST', {
+        message: message,
+        type: 'IRRIGATION'
+    }, true).catch(err => console.error('Failed to save log:', err));
 }
 
-// ========== TIME-OF-DAY FUNCTIONS ==========
+
+function updateCoverDisplay() {
+    if (!coverStatusElement || !coverStateElement) return;
+    
+    if (greenhouseState.coverOpen) {
+        coverStatusElement.classList.remove('closed');
+        coverStateElement.textContent = 'Open';
+        coverStateElement.style.color = '#4caf50';
+    } else {
+        coverStatusElement.classList.add('closed');
+        coverStateElement.textContent = 'Closed';
+        coverStateElement.style.color = '#8d6e63';
+    }
+}
+
+
+async function updateSensorReadings() {
+
+    if (apiAvailable) {
+        try {
+            const data = await greenhouseAPI.getCurrentData();
+            if (data) {
+                displaySensorData(data);
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to fetch sensor data from API:', error);
+        }
+    }
+    
+
+    updateSensorReadingsSimulated();
+}
+
+function updateSensorReadingsSimulated() {
+    const currentHour = timeMode === 'real' ? 
+        new Date().getHours() + new Date().getMinutes() / 60 : 
+        currentSimulatedTime.getHours() + currentSimulatedTime.getMinutes() / 60;
+    
+    const isDaytime = currentHour >= timeConfig.sunrise && currentHour <= timeConfig.sunset;
+    
+    let tempValue;
+    if (isDaytime) {
+        tempValue = greenhouseState.coverOpen ? 
+            (Math.random() * 6 + 22 + (currentHour - 12) * 0.5) :
+            (Math.random() * 4 + 24);
+    } else {
+        tempValue = greenhouseState.coverOpen ?
+            (Math.random() * 4 + 18 - (currentHour > 12 ? currentHour - 12 : currentHour) * 0.3) :
+            (Math.random() * 3 + 20);
+    }
+    
+    let humidityValue = greenhouseState.coverOpen ?
+        (Math.random() * 20 + 55 + (isDaytime ? -10 : 10)) :
+        (Math.random() * 15 + 70);
+    
+    let soilDryingRate = isDaytime ? 0.8 : 0.3;
+    let soilValue = soilValueElement ? parseFloat(soilValueElement.textContent) || 72 : 72;
+    
+    if (!waterpumpState.isActive) soilValue -= Math.random() * soilDryingRate;
+    if (waterpumpState.isActive) soilValue += Math.random() * 1.5;
+    
+    if (soilValue < 30) soilValue = 70; 
+    if (soilValue > 90) soilValue = 70;
+    
+    let lightValue;
+    if (isDaytime) {
+        const sunPosition = (currentHour - timeConfig.sunrise) / (timeConfig.sunset - timeConfig.sunrise);
+        const lightIntensity = Math.sin(sunPosition * Math.PI) * 600 + 400;
+        
+        lightValue = greenhouseState.coverOpen ?
+            Math.floor(lightIntensity + Math.random() * 200) :
+            Math.floor(lightIntensity * 0.5 + Math.random() * 100);
+    } else {
+        lightValue = greenhouseState.lightsOn ?
+            Math.floor(Math.random() * 100 + 50) :
+            Math.floor(Math.random() * 10);
+    }
+    
+    displaySensorData({
+        temperature: tempValue,
+        humidity: humidityValue,
+        soilMoisture: soilValue,
+        lightLevel: lightValue
+    });
+}
+
+function displaySensorData(data) {
+    const { temperature, humidity, soilMoisture, lightLevel } = data;
+    
+    if (temperatureValueElement) temperatureValueElement.textContent = `${temperature.toFixed(1)}°C`;
+    if (humidityValueElement) humidityValueElement.textContent = `${humidity.toFixed(0)}%`;
+    if (soilValueElement) soilValueElement.textContent = `${soilMoisture.toFixed(1)}%`;
+    if (lightValueElement) lightValueElement.textContent = `${lightLevel.toFixed(0)} lux`;
+    
+    updateCurrentValues();
+    updateStatusIndicators(temperature, humidity, soilMoisture, lightLevel);
+    checkAllTargetStatuses();
+    
+    if (environmentChart) addChartData(temperature, humidity, soilMoisture, lightLevel);
+    checkForAlerts(temperature, humidity, soilMoisture, lightLevel);
+    updateSoilMoistureForWaterPump(soilMoisture);
+}
+
+function updateSoilMoistureForWaterPump(soilMoisture) {
+    if (currentSoilPumpElement) currentSoilPumpElement.textContent = `${soilMoisture.toFixed(1)}%`;
+    if (soilFillElement) {
+        soilFillElement.style.width = `${soilMoisture}%`;
+        
+        if (soilMoisture < 40) {
+            soilFillElement.style.background = 'linear-gradient(to right, var(--danger-color), #ef5350)';
+        } else if (soilMoisture < 60) {
+            soilFillElement.style.background = 'linear-gradient(to right, var(--warning-color), #ffb74d)';
+        } else {
+            soilFillElement.style.background = 'linear-gradient(to right, var(--soil-color), #a1887f)';
+        }
+    }
+}
 
 
 function initializeTimeSystem() {
     console.log('Initializing Time-of-Day System...');
-    
-    // Calculate initial times
-    updateSunriseSunsetTimes();
-    
-    // Start time updates
     updateTimeOfDay();
-    setInterval(updateTimeOfDay, 60000); // Update every minute
-    
-    // Initialize time controls
+    setInterval(updateTimeOfDay, 60000);
     setupTimeControls();
-    
-    // Initial time effect
-    applyTimeEffects();
-}
-
-function updateSunriseSunsetTimes() {
-    const sunrise = new Date();
-    sunrise.setHours(Math.floor(timeConfig.sunrise), (timeConfig.sunrise % 1) * 60, 0);
-    
-    const sunset = new Date();
-    sunset.setHours(Math.floor(timeConfig.sunset), (timeConfig.sunset % 1) * 60, 0);
-    
-    if (sunriseTimeElement) sunriseTimeElement.textContent = sunrise.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-    if (sunsetTimeElement) sunsetTimeElement.textContent = sunset.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-    
-    // Calculate daylight hours
-    const daylightHours = timeConfig.sunset - timeConfig.sunrise;
-    const daylightHoursFormatted = Math.floor(daylightHours) + 'h ' + Math.floor((daylightHours % 1) * 60) + 'm';
-    const nightHoursFormatted = Math.floor(24 - daylightHours) + 'h ' + Math.floor(((24 - daylightHours) % 1) * 60) + 'm';
-    
-    if (daylightHoursElement) daylightHoursElement.textContent = daylightHoursFormatted;
-    if (nightHoursElement) nightHoursElement.textContent = nightHoursFormatted;
 }
 
 function updateTimeOfDay() {
     const now = timeMode === 'real' ? new Date() : currentSimulatedTime;
     const currentHour = now.getHours() + now.getMinutes() / 60;
     
-    // Update sun/moon position
     updateCelestialPositions(currentHour);
-    
-    // Apply time-based visual effects
     applyTimeEffects(currentHour);
-    
-    // Update plant state based on time
-    updatePlantState(currentHour);
-    
-    // Update time progress
     updateTimeProgress(currentHour);
     
-    // Update displayed time
-    if (currentTimeElement) {
-        currentTimeElement.textContent = now.toLocaleTimeString();
-    }
+    if (currentTimeElement) currentTimeElement.textContent = now.toLocaleTimeString();
     
-    // Advance simulated time if applicable
-    if (timeMode === 'simulated' && !isTimePaused) {
-        advanceSimulatedTime();
-    }
+    if (timeMode === 'simulated' && !isTimePaused) advanceSimulatedTime();
 }
 
 function updateCelestialPositions(currentHour) {
-    const trackWidth = 190;
     const dayDuration = timeConfig.sunset - timeConfig.sunrise;
     
-    // Calculate sun position (0-100%)
     let sunPosition = 0;
     if (currentHour >= timeConfig.sunrise && currentHour <= timeConfig.sunset) {
         sunPosition = ((currentHour - timeConfig.sunrise) / dayDuration) * 100;
@@ -839,10 +1193,8 @@ function updateCelestialPositions(currentHour) {
         sunPosition = 100;
     }
     
-    // Calculate moon position (opposite of sun)
     let moonPosition = (sunPosition + 50) % 100;
     
-    // Apply positions
     if (sunElement) {
         sunElement.style.left = `${sunPosition}%`;
         sunElement.style.opacity = currentHour >= timeConfig.sunrise && currentHour <= timeConfig.sunset ? '1' : '0';
@@ -855,22 +1207,18 @@ function updateCelestialPositions(currentHour) {
 }
 
 function applyTimeEffects(currentHour = new Date().getHours() + new Date().getMinutes() / 60) {
-    // Remove all time classes
     document.body.classList.remove('dawn-mode', 'morning-mode', 'afternoon-mode', 'dusk-mode', 'night-mode');
     
     let timePeriod = '';
     let periodData = {};
     
-    // Determine time period
     if (currentHour >= timeConfig.dawnStart && currentHour < timeConfig.dawnEnd) {
         timePeriod = 'dawn';
         periodData = {
             name: 'Dawn',
             icon: 'fa-cloud-sun',
             color: '#FFB74D',
-            description: 'Plants are waking up',
-            plantState: 'Awakening',
-            plantDesc: 'Beginning photosynthesis'
+            description: 'Plants are waking up'
         };
     } else if (currentHour >= timeConfig.dawnEnd && currentHour < timeConfig.morningEnd) {
         timePeriod = 'morning';
@@ -878,9 +1226,7 @@ function applyTimeEffects(currentHour = new Date().getHours() + new Date().getMi
             name: 'Morning',
             icon: 'fa-sun',
             color: '#FFC107',
-            description: 'Optimal growth period',
-            plantState: 'Photosynthesis Peak',
-            plantDesc: 'Maximum energy production'
+            description: 'Optimal growth period'
         };
     } else if (currentHour >= timeConfig.morningEnd && currentHour < timeConfig.afternoonEnd) {
         timePeriod = 'afternoon';
@@ -888,9 +1234,7 @@ function applyTimeEffects(currentHour = new Date().getHours() + new Date().getMi
             name: 'Afternoon',
             icon: 'fa-sun',
             color: '#FF9800',
-            description: 'Warmest part of the day',
-            plantState: 'Active Growth',
-            plantDesc: 'Cell division and expansion'
+            description: 'Warmest part of the day'
         };
     } else if (currentHour >= timeConfig.afternoonEnd && currentHour < timeConfig.duskEnd) {
         timePeriod = 'dusk';
@@ -898,9 +1242,7 @@ function applyTimeEffects(currentHour = new Date().getHours() + new Date().getMi
             name: 'Evening',
             icon: 'fa-cloud-moon',
             color: '#FF5722',
-            description: 'Cooling down period',
-            plantState: 'Preparing for Night',
-            plantDesc: 'Storing energy reserves'
+            description: 'Cooling down period'
         };
     } else {
         timePeriod = 'night';
@@ -908,82 +1250,26 @@ function applyTimeEffects(currentHour = new Date().getHours() + new Date().getMi
             name: 'Night',
             icon: 'fa-moon',
             color: '#673AB7',
-            description: 'Rest and recovery',
-            plantState: 'Respiration',
-            plantDesc: 'Consuming stored energy'
+            description: 'Rest and recovery'
         };
     }
     
-    // Apply time period class
     document.body.classList.add(`${timePeriod}-mode`);
     
-    // Update period display
     if (periodIcon && periodName && periodTime) {
         const iconElement = periodIcon.querySelector('i');
         if (iconElement) {
             iconElement.className = `fas ${periodData.icon}`;
             periodIcon.style.background = `linear-gradient(135deg, ${periodData.color}, ${periodData.color}80)`;
-            
             periodName.textContent = periodData.name;
-            periodTime.textContent = `${getTimeRange(currentHour, timePeriod)}`;
         }
     }
-    
-    // Update plant state
-    if (plantStateText && plantStateDesc) {
-        plantStateText.textContent = periodData.plantState;
-        plantStateDesc.textContent = periodData.plantDesc;
-        
-        // Update plant icon color
-        const plantIcon = plantStateIndicator.querySelector('.plant-state-icon i');
-        if (plantIcon) {
-            plantIcon.style.color = periodData.color;
-        }
-        
-        // Update glow color
-        const plantGlow = plantStateIndicator.querySelector('.plant-state-glow');
-        if (plantGlow) {
-            plantGlow.style.background = periodData.color;
-        }
-    }
-}
-
-function getTimeRange(currentHour, period) {
-    switch(period) {
-        case 'dawn':
-            return '5:00 AM - 7:00 AM';
-        case 'morning':
-            return '7:00 AM - 12:00 PM';
-        case 'afternoon':
-            return '12:00 PM - 5:00 PM';
-        case 'dusk':
-            return '5:00 PM - 8:00 PM';
-        case 'night':
-            return '8:00 PM - 5:00 AM';
-        default:
-            return '24/7';
-    }
-}
-
-function updatePlantState(currentHour) {
-    const plantCards = document.querySelectorAll('.plant-card');
-    
-    plantCards.forEach(card => {
-        if (currentHour >= timeConfig.sunrise && currentHour <= timeConfig.sunset) {
-            card.classList.remove('sleeping');
-            card.classList.add('active');
-        } else {
-            card.classList.remove('active');
-            card.classList.add('sleeping');
-        }
-    });
 }
 
 function updateTimeProgress(currentHour) {
     if (!timeProgressFill) return;
     
     let progress = 0;
-    
     if (currentHour >= timeConfig.dawnStart && currentHour < timeConfig.dawnEnd) {
         progress = (currentHour - timeConfig.dawnStart) / (timeConfig.dawnEnd - timeConfig.dawnStart);
     } else if (currentHour >= timeConfig.dawnEnd && currentHour < timeConfig.morningEnd) {
@@ -1032,41 +1318,15 @@ function setupTimeControls() {
             showToast(isTimePaused ? 'Time paused' : 'Time resumed', 'info');
         });
     }
-    
-    if (timeSimulationSlider) {
-        timeSimulationSlider.addEventListener('input', function() {
-            if (timeMode !== 'simulated') {
-                timeMode = 'simulated';
-                isTimePaused = true;
-            }
-            
-            const hour = parseFloat(this.value);
-            currentSimulatedTime = new Date();
-            currentSimulatedTime.setHours(Math.floor(hour), (hour % 1) * 60, 0);
-            
-            updateTimeOfDay();
-        });
-    }
 }
 
 function updateButtonStates() {
-    if (realTimeBtn) {
-        realTimeBtn.style.opacity = timeMode === 'real' ? '1' : '0.6';
-        realTimeBtn.style.transform = timeMode === 'real' ? 'scale(1.05)' : 'scale(1)';
-    }
-    
-    if (speedUpBtn) {
-        speedUpBtn.style.opacity = timeMode === 'simulated' && !isTimePaused ? '1' : '0.6';
-        speedUpBtn.style.transform = timeMode === 'simulated' && !isTimePaused ? 'scale(1.05)' : 'scale(1)';
-    }
-    
+    if (realTimeBtn) realTimeBtn.style.opacity = timeMode === 'real' ? '1' : '0.6';
+    if (speedUpBtn) speedUpBtn.style.opacity = timeMode === 'simulated' && !isTimePaused ? '1' : '0.6';
     if (pauseTimeBtn) {
         const icon = pauseTimeBtn.querySelector('i');
-        if (icon) {
-            icon.className = isTimePaused ? 'fas fa-play' : 'fas fa-pause';
-        }
+        if (icon) icon.className = isTimePaused ? 'fas fa-play' : 'fas fa-pause';
         pauseTimeBtn.style.opacity = isTimePaused ? '1' : '0.6';
-        pauseTimeBtn.style.transform = isTimePaused ? 'scale(1.05)' : 'scale(1)';
     }
 }
 
@@ -1085,123 +1345,10 @@ function advanceSimulatedTime() {
     }
 }
 
-// ========== ORIGINAL SYSTEM FUNCTIONS ==========
 
-function initializeDashboard() {
-    console.log('Initializing dashboard...');
-
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-
-    updateTime();
-    setInterval(updateTime, 1000);
-    
-    updateSensorReadings();
-    setInterval(updateSensorReadings, 3000);
-    
-    setTimeout(() => {
-        initializeChart();
-    }, 500);
-    
-    setupEventListeners();
-}
-
-function setTheme(theme) {
-    console.log('Setting theme to:', theme);
-    
-    if (theme === 'dark') {
-        document.body.classList.remove('light-mode');
-        document.body.classList.add('dark-mode');
-        if (themeToggle) themeToggle.checked = true;
-        localStorage.setItem('theme', 'dark');
-    } else {
-        document.body.classList.remove('dark-mode');
-        document.body.classList.add('light-mode');
-        if (themeToggle) themeToggle.checked = false;
-        localStorage.setItem('theme', 'light');
-    }
-    
-    if (environmentChart) {
-        updateChartColors();
-    }
-}
-
-function updateTime() {
-    if (!currentTimeElement) return;
-    
-    const now = timeMode === 'real' ? new Date() : currentSimulatedTime;
-    const timeString = now.toLocaleTimeString();
-    currentTimeElement.textContent = timeString;
-}
-
-function checkLoginStatus() {
-    const savedUser = localStorage.getItem('plantCareUser');
-    if (savedUser) {
-        currentSettings.user = savedUser;
-        if (loggedUserElement) loggedUserElement.textContent = savedUser;
-        showDashboard();
-    } else {
-        showLogin();
-    }
-}
-
-function showLogin() {
-    if (loginOverlay) loginOverlay.style.display = 'flex';
-    if (mainContainer) mainContainer.style.display = 'none';
-}
-
-function showDashboard() {
-    if (loginOverlay) loginOverlay.style.display = 'none';
-    if (mainContainer) mainContainer.style.display = 'block';
-    
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
-    
-    const welcomeLog = document.createElement('div');
-    welcomeLog.className = 'log-entry system';
-    welcomeLog.innerHTML = `
-        <div class="log-time">${timeString}</div>
-        <div class="log-message">User "${currentSettings.user}" logged in</div>
-        <div class="log-type">SYSTEM</div>
-    `;
-    if (logsList) logsList.prepend(welcomeLog);
-    
-    loadSavedSettings();
-}
-
-if (loginForm) {
-    loginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('username');
-        const password = document.getElementById('password');
-        
-        if (username && password) {
-            const usernameValue = username.value;
-            const passwordValue = password.value;
-            
-            if (usernameValue && passwordValue) {
-                const success = await handleLogin(usernameValue, passwordValue);
-                
-                if (success) {
-                    username.value = '';
-                    password.value = '';
-                }
-            } else {
-                showToast('Please enter both username and password', 'error');
-            }
-        }
-    });
-}
-
-if (applyTargetsBtn) {
-    applyTargetsBtn.addEventListener('click', async function() {
-        await applyTargets();
-    });
-}
 function initializePlantSelection() {
     plantOptions.forEach(option => {
-        option.addEventListener('click', async function() {
+        option.addEventListener('click', function() {
             plantOptions.forEach(opt => opt.classList.remove('active'));
             this.classList.add('active');
             
@@ -1209,7 +1356,7 @@ function initializePlantSelection() {
             currentSettings.selectedPlant = plantType;
             
             updatePlantDisplay(plantType);
-            await applyPlantPresetWithAPI(plantType);
+            applyPlantPreset(plantType);
             saveSettings();
         });
     });
@@ -1219,7 +1366,6 @@ function updatePlantDisplay(plantType) {
     const preset = plantPresets[plantType];
     if (plantNameDisplay) plantNameDisplay.textContent = `${preset.name} Settings`;
     if (currentPlantTypeElement) currentPlantTypeElement.textContent = preset.name;
-    
     if (plantNameDisplay) plantNameDisplay.title = preset.description;
 }
 
@@ -1233,7 +1379,7 @@ function applyPlantPreset(plantType) {
     
     updateTargetDisplays();
     currentSettings.targets = {...preset};
-
+    
     if (plantType !== 'custom') {
         showToast(`${preset.name} preset applied`, 'success');
     } else {
@@ -1283,10 +1429,15 @@ function updateTargetDisplays() {
 }
 
 function updateCurrentValues() {
-    if (currentTempElement && temperatureValueElement) currentTempElement.textContent = temperatureValueElement.textContent;
-    if (currentHumidityElement && humidityValueElement) currentHumidityElement.textContent = humidityValueElement.textContent;
-    if (currentLightElement && lightValueElement) currentLightElement.textContent = lightValueElement.textContent;
-    if (currentSoilElement && soilValueElement) currentSoilElement.textContent = soilValueElement.textContent;
+    const tempText = temperatureValueElement ? temperatureValueElement.textContent : '24.5°C';
+    const humidityText = humidityValueElement ? humidityValueElement.textContent : '65%';
+    const lightText = lightValueElement ? lightValueElement.textContent : '850 lux';
+    const soilText = soilValueElement ? soilValueElement.textContent : '72%';
+    
+    if (currentTempElement) currentTempElement.textContent = tempText;
+    if (currentHumidityElement) currentHumidityElement.textContent = humidityText;
+    if (currentLightElement) currentLightElement.textContent = lightText;
+    if (currentSoilElement) currentSoilElement.textContent = soilText;
 }
 
 function checkTargetStatus(type) {
@@ -1298,7 +1449,6 @@ function checkTargetStatus(type) {
     const currentText = currentElement.textContent;
     const currentValue = parseFloat(currentText.replace(/[^\d.-]/g, ''));
     const targetValue = parseFloat(targetSlider.value);
-
     const diff = Math.abs(currentValue - targetValue);
     const tolerance = getTolerance(type);
 
@@ -1349,7 +1499,6 @@ if (savePresetBtn) {
                 description: "Custom settings saved by user"
             };
             localStorage.setItem('customPreset', JSON.stringify(plantPresets.custom));
-            
             showToast('Custom settings saved', 'success');
         } else {
             showToast('Select "Custom" to save your own preset', 'warning');
@@ -1358,25 +1507,38 @@ if (savePresetBtn) {
 }
 
 if (applyTargetsBtn) {
-    applyTargetsBtn.addEventListener('click', function() {
+    applyTargetsBtn.addEventListener('click', async function() {
         const temp = tempTargetSlider ? parseFloat(tempTargetSlider.value) : 24;
         const humidity = humidityTargetSlider ? parseFloat(humidityTargetSlider.value) : 65;
         const light = lightTargetSlider ? parseFloat(lightTargetSlider.value) : 850;
         const soil = soilTargetSlider ? parseFloat(soilTargetSlider.value) : 70;
         
-        const now = new Date();
-        const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
-        
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry climate';
-        logEntry.innerHTML = `
-            <div class="log-time">${timeString}</div>
-            <div class="log-message">Targets applied: Temp: ${temp}°C, Humidity: ${humidity}%, Light: ${light} lux, Soil: ${soil}%</div>
-            <div class="log-type">CLIMATE</div>
-        `;
-        if (logsList) logsList.prepend(logEntry);
-        
-        showToast('Target settings applied to greenhouse system', 'success');
+        try {
+
+            if (apiAvailable) {
+                await greenhouseAPI.apiRequest('/api/targets', 'PUT', {
+                    temperature: temp,
+                    humidity: humidity,
+                    light: light,
+                    soil: soil,
+                    plantType: currentSettings.selectedPlant
+                }, true);
+                
+                showToast('Target settings saved to database', 'success');
+            } else {
+                showToast('Target settings saved locally', 'info');
+            }
+            
+
+            await greenhouseAPI.apiRequest('/api/logs', 'POST', {
+                message: `Targets applied: Temp: ${temp}°C, Humidity: ${humidity}%, Light: ${light} lux, Soil: ${soil}%`,
+                type: 'CLIMATE'
+            }, true);
+            
+        } catch (error) {
+            console.error('Failed to save targets:', error);
+            showToast('Failed to save targets', 'error');
+        }
     });
 }
 
@@ -1393,7 +1555,6 @@ function saveSettings() {
         targets: currentSettings.targets,
         user: currentSettings.user
     };
-    
     localStorage.setItem('plantCareSettings', JSON.stringify(settingsToSave));
 }
 
@@ -1401,18 +1562,14 @@ function loadSavedSettings() {
     const savedSettings = localStorage.getItem('plantCareSettings');
     if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-        
         currentSettings.selectedPlant = settings.selectedPlant || 'custom';
         currentSettings.targets = settings.targets || {...plantPresets.custom};
-
         updatePlantSelectionUI();
         updateTargetSlidersFromSettings();
         updateTargetDisplays();
     }
     const savedCustomPreset = localStorage.getItem('customPreset');
-    if (savedCustomPreset) {
-        plantPresets.custom = JSON.parse(savedCustomPreset);
-    }
+    if (savedCustomPreset) plantPresets.custom = JSON.parse(savedCustomPreset);
 }
 
 function updatePlantSelectionUI() {
@@ -1422,7 +1579,6 @@ function updatePlantSelectionUI() {
             option.classList.add('active');
         }
     });
-    
     updatePlantDisplay(currentSettings.selectedPlant);
 }
 
@@ -1433,240 +1589,6 @@ function updateTargetSlidersFromSettings() {
     if (soilTargetSlider) soilTargetSlider.value = currentSettings.targets.soil;
 }
 
-function updateSensorReadings() {
-    const currentHour = timeMode === 'real' ? 
-        new Date().getHours() + new Date().getMinutes() / 60 : 
-        currentSimulatedTime.getHours() + currentSimulatedTime.getMinutes() / 60;
-    
-    const isDaytime = currentHour >= timeConfig.sunrise && currentHour <= timeConfig.sunset;
-    
-    // Time-based sensor readings
-    let tempValue;
-    if (isDaytime) {
-        tempValue = greenhouseState.coverOpen ? 
-            (Math.random() * 6 + 22 + (currentHour - 12) * 0.5) :
-            (Math.random() * 4 + 24);
-    } else {
-        tempValue = greenhouseState.coverOpen ?
-            (Math.random() * 4 + 18 - (currentHour > 12 ? currentHour - 12 : currentHour) * 0.3) :
-            (Math.random() * 3 + 20);
-    }
-    
-    let humidityValue = greenhouseState.coverOpen ?
-        (Math.random() * 20 + 55 + (isDaytime ? -10 : 10)) :
-        (Math.random() * 15 + 70);
-    
-    let soilDryingRate = isDaytime ? 0.8 : 0.3;
-    let soilValue = soilValueElement ? parseFloat(soilValueElement.textContent) || 72 : 72;
-    
-    // Simulate soil moisture decrease (faster if water pump is off)
-    if (!waterpumpState.isActive) {
-        soilValue -= Math.random() * soilDryingRate;
-    }
-    
-    // If water pump is active, increase soil moisture
-    if (waterpumpState.isActive) {
-        soilValue += Math.random() * 1.5;
-    }
-    
-    if (soilValue < 30) soilValue = 70; 
-    if (soilValue > 90) soilValue = 70;
-    
-    let lightValue;
-    if (isDaytime) {
-        const sunPosition = (currentHour - timeConfig.sunrise) / (timeConfig.sunset - timeConfig.sunrise);
-        const lightIntensity = Math.sin(sunPosition * Math.PI) * 600 + 400;
-        
-        lightValue = greenhouseState.coverOpen ?
-            Math.floor(lightIntensity + Math.random() * 200) :
-            Math.floor(lightIntensity * 0.5 + Math.random() * 100);
-    } else {
-        lightValue = greenhouseState.lightsOn ?
-            Math.floor(Math.random() * 100 + 50) :
-            Math.floor(Math.random() * 10);
-    }
-    
-    // Update displays
-    if (temperatureValueElement) temperatureValueElement.textContent = `${tempValue.toFixed(1)}°C`;
-    if (humidityValueElement) humidityValueElement.textContent = `${Math.floor(humidityValue)}%`;
-    if (soilValueElement) soilValueElement.textContent = `${Math.max(0, soilValue).toFixed(1)}%`;
-    if (lightValueElement) lightValueElement.textContent = `${lightValue} lux`;
-    
-    updateCurrentValues();
-    updateStatusIndicators(tempValue, humidityValue, soilValue, lightValue);
-    checkAllTargetStatuses();
-    
-    if (environmentChart) {
-        addChartData(tempValue, humidityValue, soilValue, lightValue);
-    }
-    
-    checkForAlerts(tempValue, humidityValue, soilValue, lightValue);
-}
-
-function updateStatusIndicators(temp, humidity, soil, light) {
-    const tempIndicator = document.querySelector('.temperature .status-indicator');
-    const tempStatus = document.querySelector('.temperature .status-text');
-    if (tempIndicator && tempStatus) {
-        if (temp < 18 || temp > 30) {
-            tempIndicator.className = 'status-indicator critical';
-            tempStatus.textContent = temp < 18 ? 'Too Cold' : 'Too Hot';
-        } else if (temp < 20 || temp > 28) {
-            tempIndicator.className = 'status-indicator warning';
-            tempStatus.textContent = temp < 20 ? 'Cool' : 'Warm';
-        } else {
-            tempIndicator.className = 'status-indicator optimal';
-            tempStatus.textContent = 'Optimal';
-        }
-    }
-    
-    const humidityIndicator = document.querySelector('.humidity .status-indicator');
-    const humidityStatus = document.querySelector('.humidity .status-text');
-    if (humidityIndicator && humidityStatus) {
-        if (humidity < 50 || humidity > 85) {
-            humidityIndicator.className = 'status-indicator warning';
-            humidityStatus.textContent = humidity < 50 ? 'Low' : 'High';
-        } else {
-            humidityIndicator.className = 'status-indicator optimal';
-            humidityStatus.textContent = 'Optimal';
-        }
-    }
-
-    const soilIndicator = document.querySelector('.soil .status-indicator');
-    const soilStatus = document.querySelector('.soil .status-text');
-    if (soilIndicator && soilStatus) {
-        if (soil < 40) {
-            soilIndicator.className = 'status-indicator critical';
-            soilStatus.textContent = 'Needs Water';
-        } else if (soil < 60) {
-            soilIndicator.className = 'status-indicator warning';
-            soilStatus.textContent = 'Dry';
-        } else {
-            soilIndicator.className = 'status-indicator optimal';
-            soilStatus.textContent = 'Optimal';
-        }
-    }
-    
-    const lightIndicator = document.querySelector('.light .status-indicator');
-    const lightStatus = document.querySelector('.light .status-text');
-    if (lightIndicator && lightStatus) {
-        const currentHour = timeMode === 'real' ? 
-            new Date().getHours() : 
-            currentSimulatedTime.getHours();
-        const isDaytime = currentHour >= 6 && currentHour <= 20;
-        
-        if (isDaytime) {
-            if (light < 300) {
-                lightIndicator.className = 'status-indicator warning';
-                lightStatus.textContent = 'Low Light';
-            } else if (light > 1200) {
-                lightIndicator.className = 'status-indicator warning';
-                lightStatus.textContent = 'High Light';
-            } else {
-                lightIndicator.className = 'status-indicator optimal';
-                lightStatus.textContent = 'Good';
-            }
-        } else {
-            if (light > 100) {
-                lightIndicator.className = 'status-indicator optimal';
-                lightStatus.textContent = 'Lights On';
-            } else {
-                lightIndicator.className = 'status-indicator warning';
-                lightStatus.textContent = 'Dark';
-            }
-        }
-    }
-}
-
-function checkForAlerts(temp, humidity, soil, light) {
-    const now = new Date();
-    const alerts = [];
-    
-    if (temp < 18) alerts.push('Temperature too low for optimal growth');
-    if (temp > 30) alerts.push('Temperature too high, risk of plant stress');
-    if (humidity < 50) alerts.push('Low humidity may cause plant dehydration');
-    if (humidity > 85) alerts.push('High humidity risk of mold growth');
-    if (soil < 40) alerts.push('Soil moisture critical, irrigation needed');
-    if (light < 300 && now.getHours() >= 6 && now.getHours() <= 18) {
-        alerts.push('Insufficient light for photosynthesis');
-    }
-    
-    // Water pump alerts
-    if (waterpumpState.waterLevel < 20) {
-        alerts.push('Water reservoir low - consider refilling');
-    }
-    if (waterpumpState.waterLevel < 10) {
-        alerts.push('Water reservoir critically low!');
-    }
-    
-    if (alerts.length > 0 && Math.random() < 0.3) {
-        addAlertLog(alerts[Math.floor(Math.random() * alerts.length)]);
-    }
-}
-
-function addAlertLog(message) {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
-    
-    const newLog = document.createElement('div');
-    newLog.className = 'log-entry alert';
-    newLog.innerHTML = `
-        <div class="log-time">${timeString}</div>
-        <div class="log-message">${message}</div>
-        <div class="log-type">ALERT</div>
-    `;
-    
-    if (logsList) {
-        logsList.prepend(newLog);
-        
-        const allLogs = logsList.querySelectorAll('.log-entry');
-        if (allLogs.length > 20) {
-            logsList.removeChild(allLogs[allLogs.length - 1]);
-        }
-    }
-    
-    if (message.includes('critical') || message.includes('risk')) {
-        showToast(`⚠️ ${message}`, 'warning');
-    }
-}
-
-function toggleGreenhouseCover() {
-    greenhouseState.coverOpen = !greenhouseState.coverOpen;
-    
-    if (greenhouseState.coverOpen) {
-        if (coverStatusElement) coverStatusElement.classList.remove('closed');
-        if (coverStateElement) {
-            coverStateElement.textContent = 'Open';
-            coverStateElement.style.color = '#4caf50';
-        }
-        showToast('Greenhouse cover opened for ventilation', 'success');
-        
-        addSystemLog('Greenhouse cover opened for ventilation and sunlight');
-    } else {
-        if (coverStatusElement) coverStatusElement.classList.add('closed');
-        if (coverStateElement) {
-            coverStateElement.textContent = 'Closed';
-            coverStateElement.style.color = '#8d6e63';
-        }
-        showToast('Greenhouse cover closed for protection', 'info');
-        
-        addSystemLog('Greenhouse cover closed for temperature and humidity control');
-    }
-}
-
-function addSystemLog(message) {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
-    
-    const newLog = document.createElement('div');
-    newLog.className = 'log-entry system';
-    newLog.innerHTML = `
-        <div class="log-time">${timeString}</div>
-        <div class="log-message">${message}</div>
-        <div class="log-type">SYSTEM</div>
-    `;
-    
-    if (logsList) logsList.prepend(newLog);
-}
 
 function initializeChart() {
     console.log('Initializing chart...');
@@ -1678,9 +1600,9 @@ function initializeChart() {
     }
     
     const ctx = chartCanvas.getContext('2d');
-    
     const timeLabels = [];
     const now = new Date();
+    
     for (let i = 9; i >= 0; i--) {
         const time = new Date(now.getTime() - i * 60000);
         timeLabels.push(time.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}));
@@ -1745,10 +1667,6 @@ function initializeChart() {
                         labels: {
                             color: getComputedStyle(document.body).getPropertyValue('--text-color')
                         }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
                     }
                 },
                 scales: {
@@ -1782,10 +1700,6 @@ function initializeChart() {
                             color: getComputedStyle(document.body).getPropertyValue('--text-color')
                         }
                     }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'nearest'
                 }
             }
         });
@@ -1807,7 +1721,6 @@ function updateChartColors() {
     environmentChart.options.scales.y.ticks.color = textColor;
     environmentChart.options.scales.y.grid.color = borderColor;
     environmentChart.options.scales.y1.ticks.color = textColor;
-    
     environmentChart.update();
 }
 
@@ -1831,16 +1744,16 @@ function addChartData(tempValue, humidityValue, soilValue, lightValue) {
     
     environmentChart.data.datasets[3].data.shift();
     environmentChart.data.datasets[3].data.push(parseFloat(lightValue));
+    
     environmentChart.update();
 }
+
 
 function setupEventListeners() {
     console.log('Setting up event listeners...');
     
     if (themeToggle) {
-        console.log('Theme toggle found');
         themeToggle.addEventListener('change', () => {
-            console.log('Theme toggle changed:', themeToggle.checked);
             if (themeToggle.checked) {
                 setTheme('dark');
             } else {
@@ -1849,17 +1762,45 @@ function setupEventListeners() {
         });
     }
     
+
     if (toggleCoverButton) {
-        toggleCoverButton.addEventListener('click', toggleGreenhouseCover);
+        toggleCoverButton.addEventListener('click', async function() {
+            try {
+                const newStatus = greenhouseState.coverOpen ? 'CLOSED' : 'OPEN';
+                
+
+                await greenhouseAPI.apiRequest(`/api/devices/cover`, 'PUT', { 
+                    status: newStatus 
+                }, true);
+                
+                greenhouseState.coverOpen = !greenhouseState.coverOpen;
+                updateCoverDisplay();
+                
+
+                await greenhouseAPI.apiRequest('/api/logs', 'POST', {
+                    message: `Greenhouse cover ${greenhouseState.coverOpen ? 'opened' : 'closed'}`,
+                    type: 'CLIMATE'
+                }, true);
+                
+                showToast(`Greenhouse cover ${greenhouseState.coverOpen ? 'opened' : 'closed'}`, 'success');
+                
+            } catch (error) {
+                console.error('Failed to toggle cover:', error);
+                showToast('Failed to control cover. Using local mode.', 'warning');
+                
+
+                greenhouseState.coverOpen = !greenhouseState.coverOpen;
+                updateCoverDisplay();
+                showToast(`Greenhouse cover ${greenhouseState.coverOpen ? 'opened (local)' : 'closed (local)'}`, 'info');
+            }
+        });
     }
     
     if (chartButtons.length > 0) {
         chartButtons.forEach(button => {
             button.addEventListener('click', () => {
-                console.log('Chart button clicked:', button.dataset.chart);
                 chartButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                
                 currentChartType = button.dataset.chart;
                 updateChartVisibility();
             });
@@ -1869,7 +1810,6 @@ function setupEventListeners() {
     if (logModeButtons.length > 0) {
         logModeButtons.forEach(button => {
             button.addEventListener('click', () => {
-                console.log('Log mode button clicked:', button.dataset.mode);
                 logModeButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 filterLogs(button.dataset.mode);
@@ -1894,13 +1834,8 @@ function setupEventListeners() {
         });
     }
     
-    // Initialize plant selection
     initializePlantSelection();
-    
-    // Setup target sliders
     setupTargetSliders();
-    
-    // Update current values initially
     updateCurrentValues();
 }
 
@@ -1908,17 +1843,11 @@ function updateChartVisibility() {
     if (!environmentChart) return;
     
     environmentChart.data.datasets.forEach((dataset, index) => {
-        if (currentChartType === 'temperature') {
-            dataset.hidden = index !== 0;
-        } else if (currentChartType === 'humidity') {
-            dataset.hidden = index !== 1;
-        } else if (currentChartType === 'soil') {
-            dataset.hidden = index !== 2;
-        } else if (currentChartType === 'light') {
-            dataset.hidden = index !== 3;
-        } else if (currentChartType === 'all') {
-            dataset.hidden = false;
-        }
+        if (currentChartType === 'temperature') dataset.hidden = index !== 0;
+        else if (currentChartType === 'humidity') dataset.hidden = index !== 1;
+        else if (currentChartType === 'soil') dataset.hidden = index !== 2;
+        else if (currentChartType === 'light') dataset.hidden = index !== 3;
+        else if (currentChartType === 'all') dataset.hidden = false;
     });
     
     environmentChart.update();
@@ -1926,21 +1855,13 @@ function updateChartVisibility() {
 
 function filterLogs(mode) {
     const logEntries = document.querySelectorAll('.log-entry');
-    
     logEntries.forEach(entry => {
-        if (mode === 'all') {
-            entry.style.display = 'flex';
-        } else {
-            if (entry.classList.contains(mode)) {
-                entry.style.display = 'flex';
-            } else {
-                entry.style.display = 'none';
-            }
-        }
+        if (mode === 'all') entry.style.display = 'flex';
+        else entry.style.display = entry.classList.contains(mode) ? 'flex' : 'none';
     });
 }
 
-function addManualLog() {
+async function addManualLog() {
     const notes = [
         'Manual irrigation applied to tomato plants',
         'Pruned lower leaves for better air circulation',
@@ -1950,47 +1871,312 @@ function addManualLog() {
         'Inspected for pests - none detected'
     ];
     
+    const message = notes[Math.floor(Math.random() * notes.length)];
+    
+    try {
+        await greenhouseAPI.apiRequest('/api/logs', 'POST', {
+            message: message,
+            type: 'CLIMATE'
+        }, true);
+        
+        showToast('Manual log entry saved', 'info');
+    } catch (error) {
+        console.error('Failed to add log:', error);
+        showToast('Failed to save log', 'error');
+    }
+}
+
+
+function updateStatusIndicators(temp, humidity, soil, light) {
+    const tempIndicator = document.querySelector('.temperature .status-indicator');
+    const tempStatus = document.querySelector('.temperature .status-text');
+    if (tempIndicator && tempStatus) {
+        if (temp < 18 || temp > 30) {
+            tempIndicator.className = 'status-indicator critical';
+            tempStatus.textContent = temp < 18 ? 'Too Cold' : 'Too Hot';
+        } else if (temp < 20 || temp > 28) {
+            tempIndicator.className = 'status-indicator warning';
+            tempStatus.textContent = temp < 20 ? 'Cool' : 'Warm';
+        } else {
+            tempIndicator.className = 'status-indicator optimal';
+            tempStatus.textContent = 'Optimal';
+        }
+    }
+    
+    const humidityIndicator = document.querySelector('.humidity .status-indicator');
+    const humidityStatus = document.querySelector('.humidity .status-text');
+    if (humidityIndicator && humidityStatus) {
+        if (humidity < 50 || humidity > 85) {
+            humidityIndicator.className = 'status-indicator warning';
+            humidityStatus.textContent = humidity < 50 ? 'Low' : 'High';
+        } else {
+            humidityIndicator.className = 'status-indicator optimal';
+            humidityStatus.textContent = 'Optimal';
+        }
+    }
+
+    const soilIndicator = document.querySelector('.soil .status-indicator');
+    const soilStatus = document.querySelector('.soil .status-text');
+    if (soilIndicator && soilStatus) {
+        if (soil < 40) {
+            soilIndicator.className = 'status-indicator critical';
+            soilStatus.textContent = 'Needs Water';
+        } else if (soil < 60) {
+            soilIndicator.className = 'status-indicator warning';
+            soilStatus.textContent = 'Dry';
+        } else {
+            soilIndicator.className = 'status-indicator optimal';
+            soilStatus.textContent = 'Optimal';
+        }
+    }
+    
+    const lightIndicator = document.querySelector('.light .status-indicator');
+    const lightStatus = document.querySelector('.light .status-text');
+    if (lightIndicator && lightStatus) {
+        const currentHour = timeMode === 'real' ? 
+            new Date().getHours() : currentSimulatedTime.getHours();
+        const isDaytime = currentHour >= 6 && currentHour <= 20;
+        
+        if (isDaytime) {
+            if (light < 300) {
+                lightIndicator.className = 'status-indicator warning';
+                lightStatus.textContent = 'Low Light';
+            } else if (light > 1200) {
+                lightIndicator.className = 'status-indicator warning';
+                lightStatus.textContent = 'High Light';
+            } else {
+                lightIndicator.className = 'status-indicator optimal';
+                lightStatus.textContent = 'Good';
+            }
+        } else {
+            if (light > 100) {
+                lightIndicator.className = 'status-indicator optimal';
+                lightStatus.textContent = 'Lights On';
+            } else {
+                lightIndicator.className = 'status-indicator warning';
+                lightStatus.textContent = 'Dark';
+            }
+        }
+    }
+}
+
+function checkForAlerts(temp, humidity, soil, light) {
+    const now = new Date();
+    const alerts = [];
+    
+    if (temp < 18) alerts.push('Temperature too low for optimal growth');
+    if (temp > 30) alerts.push('Temperature too high, risk of plant stress');
+    if (humidity < 50) alerts.push('Low humidity may cause plant dehydration');
+    if (humidity > 85) alerts.push('High humidity risk of mold growth');
+    if (soil < 40) alerts.push('Soil moisture critical, irrigation needed');
+    if (light < 300 && now.getHours() >= 6 && now.getHours() <= 18) alerts.push('Insufficient light for photosynthesis');
+    if (waterpumpState.waterLevel < 20) alerts.push('Water reservoir low - consider refilling');
+    if (waterpumpState.waterLevel < 10) alerts.push('Water reservoir critically low!');
+    
+    if (alerts.length > 0 && Math.random() < 0.3) {
+        addAlertLog(alerts[Math.floor(Math.random() * alerts.length)]);
+    }
+}
+
+function addAlertLog(message) {
     const now = new Date();
     const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
     
+
     const newLog = document.createElement('div');
-    newLog.className = 'log-entry climate';
+    newLog.className = 'log-entry alert';
     newLog.innerHTML = `
         <div class="log-time">${timeString}</div>
-        <div class="log-message">${notes[Math.floor(Math.random() * notes.length)]}</div>
-        <div class="log-type">CLIMATE</div>
+        <div class="log-message">${message}</div>
+        <div class="log-type">ALERT</div>
+    `;
+    
+    if (logsList) {
+        logsList.prepend(newLog);
+        const allLogs = logsList.querySelectorAll('.log-entry');
+        if (allLogs.length > 20) logsList.removeChild(allLogs[allLogs.length - 1]);
+    }
+    
+
+    greenhouseAPI.apiRequest('/api/logs', 'POST', {
+        message: message,
+        type: 'ALERT'
+    }, true).catch(err => console.error('Failed to save alert:', err));
+    
+    if (message.includes('critical') || message.includes('risk')) {
+        showToast(`⚠️ ${message}`, 'warning');
+    }
+}
+
+function addSystemLog(message) {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+    
+
+    const newLog = document.createElement('div');
+    newLog.className = 'log-entry system';
+    newLog.innerHTML = `
+        <div class="log-time">${timeString}</div>
+        <div class="log-message">${message}</div>
+        <div class="log-type">SYSTEM</div>
     `;
     
     if (logsList) logsList.prepend(newLog);
     
-    showToast('Manual log entry added', 'info');
+
+    greenhouseAPI.apiRequest('/api/logs', 'POST', {
+        message: message,
+        type: 'SYSTEM'
+    }, true).catch(err => console.error('Failed to save system log:', err));
 }
 
-function showToast(message, type = 'info') {
-    // Remove existing toasts
-    const existingToasts = document.querySelectorAll('.toast');
-    existingToasts.forEach(toast => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
+
+function setupPanelVisibilityControls() {
+    if (toggleWaterpumpVisibilityBtn) {
+        toggleWaterpumpVisibilityBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanelVisibility('waterpump');
+        });
+        
+        const waterpumpTitle = waterpumpSection.querySelector('.section-title');
+        if (waterpumpTitle) {
+            waterpumpTitle.style.cursor = 'pointer';
+            waterpumpTitle.addEventListener('click', (e) => {
+                if (e.target !== toggleWaterpumpVisibilityBtn && !toggleWaterpumpVisibilityBtn.contains(e.target)) {
+                    togglePanelVisibility('waterpump');
+                }
+            });
         }
-    });
+    }
     
-    // Create toast element
+    if (toggleCoverVisibilityBtn) {
+        toggleCoverVisibilityBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanelVisibility('cover');
+        });
+        
+        const coverTitle = coverSection.querySelector('.section-title');
+        if (coverTitle) {
+            coverTitle.style.cursor = 'pointer';
+            coverTitle.addEventListener('click', (e) => {
+                if (e.target !== toggleCoverVisibilityBtn && !toggleCoverVisibilityBtn.contains(e.target)) {
+                    togglePanelVisibility('cover');
+                }
+            });
+        }
+    }
+    
+    loadVisibilityState();
+}
+
+function loadVisibilityState() {
+    const savedState = localStorage.getItem('panelVisibility');
+    if (savedState) {
+        panelVisibility = JSON.parse(savedState);
+        updatePanelVisibility();
+    }
+}
+
+function saveVisibilityState() {
+    localStorage.setItem('panelVisibility', JSON.stringify(panelVisibility));
+}
+
+function updatePanelVisibility() {
+    if (waterpumpSection) {
+        if (panelVisibility.waterpump) {
+            waterpumpSection.classList.remove('hidden');
+            if (toggleWaterpumpVisibilityBtn) {
+                const icon = toggleWaterpumpVisibilityBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-eye-slash';
+                toggleWaterpumpVisibilityBtn.title = 'Hide Water Pump';
+            }
+        } else {
+            waterpumpSection.classList.add('hidden');
+            if (toggleWaterpumpVisibilityBtn) {
+                const icon = toggleWaterpumpVisibilityBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-eye';
+                toggleWaterpumpVisibilityBtn.title = 'Show Water Pump';
+            }
+        }
+    }
+    
+    if (coverSection) {
+        if (panelVisibility.cover) {
+            coverSection.classList.remove('hidden');
+            if (toggleCoverVisibilityBtn) {
+                const icon = toggleCoverVisibilityBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-eye-slash';
+                toggleCoverVisibilityBtn.title = 'Hide Cover';
+            }
+        } else {
+            coverSection.classList.add('hidden');
+            if (toggleCoverVisibilityBtn) {
+                const icon = toggleCoverVisibilityBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-eye';
+                toggleCoverVisibilityBtn.title = 'Show Cover';
+            }
+        }
+    }
+    
+    panelVisibility.allVisible = panelVisibility.waterpump && panelVisibility.cover;
+    saveVisibilityState();
+}
+
+function togglePanelVisibility(panelType) {
+    panelVisibility[panelType] = !panelVisibility[panelType];
+    updatePanelVisibility();
+    
+    const panelName = panelType === 'waterpump' ? 'Water Pump' : 'Greenhouse Cover';
+    showToast(`${panelName} panel ${panelVisibility[panelType] ? 'shown' : 'hidden'}`, 'info');
+}
+
+
+function initializeTimeEffectsToggle() {
+    const savedState = localStorage.getItem('timeEffectsVisible');
+    if (savedState !== null) timeEffectsVisible = savedState === 'true';
+    updateTimeEffectsVisibility();
+    
+    if (toggleTimeEffectsBtn) {
+        toggleTimeEffectsBtn.addEventListener('click', toggleTimeEffects);
+    }
+}
+
+function toggleTimeEffects() {
+    timeEffectsVisible = !timeEffectsVisible;
+    updateTimeEffectsVisibility();
+    localStorage.setItem('timeEffectsVisible', timeEffectsVisible);
+    showToast(`Time effects ${timeEffectsVisible ? 'shown' : 'hidden'}`, 'info');
+}
+
+function updateTimeEffectsVisibility() {
+    if (timeEffectsVisible) {
+        document.body.classList.remove('time-effects-hidden');
+        if (toggleTimeEffectsBtn) {
+            toggleTimeEffectsBtn.classList.add('active');
+            toggleTimeEffectsBtn.innerHTML = '<i class="fas fa-eye-slash"></i><span>Hide Time Effects</span>';
+        }
+    } else {
+        document.body.classList.add('time-effects-hidden');
+        if (toggleTimeEffectsBtn) {
+            toggleTimeEffectsBtn.classList.remove('active');
+            toggleTimeEffectsBtn.innerHTML = '<i class="fas fa-eye"></i><span>Show Time Effects</span>';
+        }
+    }
+}
+
+
+function showToast(message, type = 'info') {
+    const existingToasts = document.querySelectorAll('.toast');
+    existingToasts.forEach(toast => toast.parentNode?.removeChild(toast));
+    
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     
-    // Set icon based on type
     let icon = 'info-circle';
     switch(type) {
-        case 'success':
-            icon = 'check-circle';
-            break;
-        case 'error':
-            icon = 'exclamation-circle';
-            break;
-        case 'warning':
-            icon = 'exclamation-triangle';
-            break;
+        case 'success': icon = 'check-circle'; break;
+        case 'error': icon = 'exclamation-circle'; break;
+        case 'warning': icon = 'exclamation-triangle'; break;
     }
     
     toast.innerHTML = `
@@ -1999,40 +2185,26 @@ function showToast(message, type = 'info') {
         <button class="toast-close"><i class="fas fa-times"></i></button>
     `;
     
-    // Add to DOM
     document.body.appendChild(toast);
     
-    // Show toast with animation
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
+    setTimeout(() => toast.classList.add('show'), 10);
     
-    // Auto remove after 5 seconds
     const autoRemove = setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        }, 300);
+        setTimeout(() => toast.parentNode?.removeChild(toast), 300);
     }, 5000);
     
-    // Close button functionality
     const closeBtn = toast.querySelector('.toast-close');
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
             clearTimeout(autoRemove);
             toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
+            setTimeout(() => toast.parentNode?.removeChild(toast), 300);
         });
     }
 }
 
-// Add toast styles if not present
+
 if (!document.querySelector('#toast-animations')) {
     const toastStyle = document.createElement('style');
     toastStyle.id = 'toast-animations';
@@ -2105,90 +2277,3 @@ if (!document.querySelector('#toast-animations')) {
     `;
     document.head.appendChild(toastStyle);
 }
-// ========== TIME EFFECTS TOGGLE FUNCTIONALITY ==========
-
-// DOM Elements
-const toggleTimeEffectsBtn = document.getElementById('toggle-time-effects');
-
-// State
-let timeEffectsVisible = true;
-
-// Initialize time effects toggle
-function initializeTimeEffectsToggle() {
-    // Load saved state
-    const savedState = localStorage.getItem('timeEffectsVisible');
-    if (savedState !== null) {
-        timeEffectsVisible = savedState === 'true';
-    }
-    
-    // Set initial state
-    updateTimeEffectsVisibility();
-    
-    // Setup event listener
-    if (toggleTimeEffectsBtn) {
-        toggleTimeEffectsBtn.addEventListener('click', toggleTimeEffects);
-    }
-}
-
-// Toggle time effects visibility
-function toggleTimeEffects() {
-    timeEffectsVisible = !timeEffectsVisible;
-    updateTimeEffectsVisibility();
-    
-    // Save state
-    localStorage.setItem('timeEffectsVisible', timeEffectsVisible);
-    
-    // Show feedback
-    showToast(`Time effects ${timeEffectsVisible ? 'shown' : 'hidden'}`, 'info');
-}
-
-// Update time effects visibility
-function updateTimeEffectsVisibility() {
-    if (timeEffectsVisible) {
-        document.body.classList.remove('time-effects-hidden');
-        if (toggleTimeEffectsBtn) {
-            toggleTimeEffectsBtn.classList.add('active');
-            toggleTimeEffectsBtn.innerHTML = '<i class="fas fa-eye-slash"></i><span>Hide Time Effects</span>';
-        }
-    } else {
-        document.body.classList.add('time-effects-hidden');
-        if (toggleTimeEffectsBtn) {
-            toggleTimeEffectsBtn.classList.remove('active');
-            toggleTimeEffectsBtn.innerHTML = '<i class="fas fa-eye"></i><span>Show Time Effects</span>';
-        }
-    }
-}
-
-// Update the initialization function to include the toggle
-function initializeDashboard() {
-    console.log('Initializing dashboard...');
-
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-
-    updateTime();
-    setInterval(updateTime, 1000);
-    
-    updateSensorReadings();
-    setInterval(updateSensorReadings, 3000);
-    
-    setTimeout(() => {
-        initializeChart();
-    }, 500);
-    
-    setupEventListeners();
-    
-    // Initialize time effects toggle
-    initializeTimeEffectsToggle();
-}
-
-// Add this to your existing DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Automated Herb Greenhouse System Initializing...');
-    
-    checkLoginStatus();
-    initializeDashboard();
-    initializeTimeSystem();
-    initializeWaterPumpSystem();
-    setupPanelVisibilityControls();
-});
